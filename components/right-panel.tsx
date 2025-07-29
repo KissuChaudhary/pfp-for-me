@@ -3,8 +3,10 @@
 import FiltersPanel from "./panels/filters-panel"
 import BackgroundPanel from "./panels/background-panel"
 import BorderPanel from "./panels/border-panel"
+import PixArtPanel from "./panels/pix-art-panel"
 import StylesPanel from "./panels/styles-panel"
 import PositionPanel from "./panels/position-panel"
+import TextPanel from "./panels/text-panel"
 
 interface RightPanelProps {
   activePanel: string | null
@@ -13,6 +15,8 @@ interface RightPanelProps {
   backgroundProps: any
   filterProps: any
   borderProps: any
+  pixArtProps: any
+  textProps: any
 }
 
 export default function RightPanel({
@@ -22,6 +26,8 @@ export default function RightPanel({
   backgroundProps,
   filterProps,
   borderProps,
+  pixArtProps,
+  textProps,
 }: RightPanelProps) {
   if (!activePanel) return null
 
@@ -33,7 +39,9 @@ export default function RightPanel({
           {activePanel === "filters" && <FiltersPanel {...filterProps} />}
           {activePanel === "background" && <BackgroundPanel {...backgroundProps} />}
           {activePanel === "border" && <BorderPanel {...borderProps} />}
+          {activePanel === "pix-art" && <PixArtPanel {...pixArtProps} />}
           {activePanel === "styles" && <StylesPanel />}
+          {activePanel === "text" && <TextPanel {...textProps} />}
         </div>
       </div>
     </div>

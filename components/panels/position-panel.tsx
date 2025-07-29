@@ -43,9 +43,7 @@ export default function PositionPanel({
   setFlipVertical,
   position,
   setPosition,
-  gridSnap,
   setGridSnap,
-  gridSize,
   setGridSize,
 }: PositionPanelProps) {
   const [showFlip, setShowFlip] = useState(false)
@@ -63,25 +61,19 @@ export default function PositionPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200">
-        <h3 className="font-bold text-lg mb-1">Position</h3>
-        <p className="text-xs text-gray-500">
-          Move, rotate, and resize your image to get the perfect framing and angle.
-        </p>
-        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-700">
-            💡 <strong>Tip:</strong> Click and drag the image to reposition it manually!
-          </p>
-        </div>
-      </div>
-
+     
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4">
+      <h3 className="font-bold text-sm mb-1">Position</h3>
+        <p className="text-xs text-gray-500 mb-2">
+          Move, rotate, and resize your image to get the perfect framing and angle.
+        </p>
+       
         <div className="space-y-6">
           {/* Zoom Control */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Zoom</span>
+              <span className="font-bold text-xs">Zoom</span>
               <span className="text-sm text-gray-500">{zoom.toFixed(1)}x</span>
             </div>
             <div className="relative">
@@ -100,7 +92,7 @@ export default function PositionPanel({
           {/* Rotate Control */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Rotate</span>
+                <span className="font-bold text-xs">Rotate</span>
               <span className="text-sm text-gray-500">{rotate}°</span>
             </div>
             <div className="relative">
@@ -118,42 +110,54 @@ export default function PositionPanel({
 
           {/* Position Presets */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Position Presets</h4>
-            <div className="grid grid-cols-3 gap-2">
-              {positionPresets.map((preset, index) => (
-                <button
-                  key={preset.label}
-                  onClick={() => setPosition({ x: preset.x, y: preset.y })}
-                  className={`aspect-square border-2 border-black rounded-lg flex items-center justify-center transition-all text-xs font-medium ${
-                    position.x === preset.x && position.y === preset.y
-                      ? "bg-blue-500 text-white shadow-[2px_2px_0_rgba(0,0,0,1)]"
-                      : "bg-white hover:bg-gray-50 shadow-[1px_1px_0_rgba(0,0,0,1)]"
-                  }`}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      position.x === preset.x && position.y === preset.y ? "bg-white" : "bg-black"
+            <h4 className="font-bold text-xs">Position Presets</h4>
+            <div className="grid grid-cols-5 gap-1">
+              {positionPresets.map((preset, index) => {
+                const positions = [
+                  { top: "10%", left: "10%" }, // TL
+                  { top: "10%", left: "50%", transform: "translateX(-50%)" }, // TC
+                  { top: "10%", right: "10%" }, // TR
+                  { top: "50%", left: "10%", transform: "translateY(-50%)" }, // CL
+                  { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }, // C
+                  { top: "50%", right: "10%", transform: "translateY(-50%)" }, // CR
+                  { bottom: "10%", left: "10%" }, // BL
+                  { bottom: "10%", left: "50%", transform: "translateX(-50%)" }, // BC
+                  { bottom: "10%", right: "10%" }, // BR
+                ]
+                const style = positions[index]
+                return (
+                  <button
+                    key={preset.label}
+                    onClick={() => setPosition({ x: preset.x, y: preset.y })}
+                    className={`relative aspect-square border-2 border-black rounded-md transition-all text-[10px] font-medium overflow-hidden w-10 h-10 flex items-center justify-center ${
+                      position.x === preset.x && position.y === preset.y
+                        ? "bg-blue-500 text-white dark-shadow"
+                        : "bg-white hover:bg-gray-50 dark-shadow"
                     }`}
-                  ></div>
-                </button>
-              ))}
+                  >
+                    {/* Visual position indicator */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        width: "12px",
+                        height: "12px",
+                        borderRadius: "50%",
+                        background: position.x === preset.x && position.y === preset.y ? "#fff" : "#222",
+                        border: position.x === preset.x && position.y === preset.y ? "2px solid #fff" : "2px solid #222",
+                        boxShadow: position.x === preset.x && position.y === preset.y ? "0 0 0 2px #2563eb" : "0 0 0 1px #222",
+                        ...style,
+                      }}
+                    />
+                  </button>
+                )
+              })}
             </div>
-            <div className="grid grid-cols-3 gap-1 text-xs text-gray-500 text-center">
-              <span>TL</span>
-              <span>TC</span>
-              <span>TR</span>
-              <span>CL</span>
-              <span>C</span>
-              <span>CR</span>
-              <span>BL</span>
-              <span>BC</span>
-              <span>BR</span>
-            </div>
+            
           </div>
 
           {/* Manual Position */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Manual Position</h4>
+            <h4 className="font-bold text-xs">Manual Position</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">X Position</label>
@@ -182,65 +186,10 @@ export default function PositionPanel({
             </div>
           </div>
 
-          {/* Grid Snapping */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Grid Snapping</h4>
-              <button
-                onClick={() => setGridSnap(!gridSnap)}
-                className={`w-10 h-5 rounded-full border-2 border-black transition-colors relative ${
-                  gridSnap ? "bg-blue-500" : "bg-gray-200"
-                }`}
-              >
-                <div
-                  className={`w-3 h-3 bg-white border border-black rounded-full absolute top-0.5 transition-transform ${
-                    gridSnap ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-
-            {gridSnap && (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Grid Size</span>
-                  <span className="text-xs text-gray-500">{gridSize}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  step="5"
-                  value={gridSize}
-                  onChange={(e) => setGridSize(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                />
-                <div className="flex gap-1 mt-2">
-                  {[10, 20, 25, 50].map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setGridSize(size)}
-                      className={`flex-1 px-2 py-1 text-xs border border-black rounded transition-all ${
-                        gridSize === size ? "bg-blue-500 text-white" : "bg-white hover:bg-gray-50"
-                      }`}
-                    >
-                      {size}px
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-xs text-green-700">
-                    🎯 Grid snapping is active! Your image will snap to {gridSize}px intervals.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Flip Controls */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Flip Image</h4>
+                <h4 className="font-bold text-xs">Flip Image</h4>
               <button onClick={() => setShowFlip(!showFlip)} className="text-xs text-blue-500 hover:text-blue-600">
                 {showFlip ? "Hide" : "Show"}
               </button>
@@ -252,23 +201,23 @@ export default function PositionPanel({
                   onClick={() => setFlipHorizontal(!flipHorizontal)}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border-2 border-black rounded-lg transition-all ${
                     flipHorizontal
-                      ? "bg-blue-500 text-white shadow-[2px_2px_0_rgba(0,0,0,1)]"
-                      : "bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] shadow-[2px_2px_0_rgba(0,0,0,1)]"
+                      ? "bg-blue-500 text-white dark-shadow"
+                      : "bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] dark-shadow"
                   }`}
                 >
                   <FlipHorizontal className="w-4 h-4" />
-                  <span className="text-xs font-medium">Horizontal</span>
+                  <span className="text-xs font-bold">Horizontal</span>
                 </button>
                 <button
                   onClick={() => setFlipVertical(!flipVertical)}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border-2 border-black rounded-lg transition-all ${
                     flipVertical
-                      ? "bg-blue-500 text-white shadow-[2px_2px_0_rgba(0,0,0,1)]"
-                      : "bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] shadow-[2px_2px_0_rgba(0,0,0,1)]"
+                      ? "bg-blue-500 text-white dark-shadow"
+                      : "bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] dark-shadow"
                   }`}
                 >
                   <FlipVertical className="w-4 h-4" />
-                  <span className="text-xs font-medium">Vertical</span>
+                  <span className="text-xs font-bold">Vertical</span>
                 </button>
               </div>
             )}
@@ -278,7 +227,7 @@ export default function PositionPanel({
           <div className="pt-4 border-t border-gray-200">
             <button
               onClick={resetAll}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)] bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all font-medium text-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-black rounded-lg dark-shadow bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all font-medium text-sm"
             >
               <RotateCcw className="w-4 h-4" />
               Reset All

@@ -161,15 +161,11 @@ export default function FiltersPanel({
       </div>
 
       <div className="flex items-center justify-between border-b border-gray-200 pb-3">
-        <span className="font-medium text-sm">Use Filters</span>
+        <span className="font-bold text-xs">Use Filters</span>
         <Switch checked={useFilters} onCheckedChange={setUseFilters} />
       </div>
 
-      {useFilters && (
-        <div className="p-2 bg-green-50 border border-green-200 rounded-lg text-center">
-          <p className="text-xs text-green-700">✅ Filters are **active** and applied to your image.</p>
-        </div>
-      )}
+     
 
       {/* Filter Presets */}
       <div className="space-y-2">
@@ -179,22 +175,18 @@ export default function FiltersPanel({
             <button
               key={presetName}
               onClick={() => applyPreset(presetName as keyof typeof filterPresets)}
-              className="px-2 py-1 border border-black rounded text-xs font-medium transition-all bg-white hover:bg-gray-50 hover:shadow-[1px_1px_0_rgba(0,0,0,1)] capitalize"
+              className="px-2 py-1 border-2 border-black rounded-md text-xs font-medium transition-all bg-white hover:bg-gray-50 dark-shadow capitalize"
             >
               {presetName === "blackwhite" ? "B&W" : presetName}
             </button>
           ))}
         </div>
-        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-700">
-            💡 <strong>Tip:</strong> Try presets first, then fine-tune with sliders below!
-          </p>
-        </div>
+      
       </div>
 
       {/* Manual Filter Controls */}
       <div className="space-y-4">
-        <h4 className="font-medium text-xs border-t border-gray-200 pt-3">Manual Adjustments</h4>
+        <h4 className="font-bold text-xs border-t border-gray-200 pt-3">Manual Adjustments</h4>
         {filterControls.map((control) => (
           <div key={control.label}>
             <div className="flex justify-between items-center mb-1">
@@ -221,7 +213,7 @@ export default function FiltersPanel({
       <div className="pt-3 border-t border-gray-200">
         <button
           onClick={() => applyPreset("normal")}
-          className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)] bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all font-medium text-xs"
+          className="w-full px-3 py-2 border-2 border-black rounded-lg dark-shadow bg-white hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all font-medium text-xs"
           disabled={!useFilters}
         >
           Reset to Normal

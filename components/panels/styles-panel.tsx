@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { Switch } from "@/components/ui/switch"
 
 const aiStyles = [
   "Adventure Time",
@@ -66,18 +67,10 @@ export default function StylesPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-700">Standard</span>
-            <button
-              onClick={() => setQuality(!quality)}
-              className={`w-10 h-5 rounded-full border-2 border-black transition-colors relative ${
-                quality ? "bg-blue-500" : "bg-gray-200"
-              }`}
-            >
-              <div
-                className={`w-3 h-3 bg-white border border-black rounded-full absolute top-0.5 transition-transform ${
-                  quality ? "translate-x-5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
+            <Switch
+              checked={quality}
+              onCheckedChange={setQuality}
+            />
             <span className="text-xs text-gray-700">Ultra</span>
           </div>
           <span className="text-xs text-gray-600 bg-gray-100 rounded-full px-2 py-0.5 border">10 credits</span>
@@ -90,7 +83,7 @@ export default function StylesPanel() {
           {aiStyles.map((style, index) => (
             <button
               key={style}
-              className="aspect-square border-2 border-black rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 hover:border-gray-500 transition-all"
+              className="aspect-square border-2 border-black rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 hover:border-gray-500 transition-all light-shadow"
             >
               <img
                 src={`/placeholder.svg?height=60&width=60&text=${style.slice(0, 2)}`}
@@ -105,7 +98,7 @@ export default function StylesPanel() {
       {/* Bottom Action */}
       <div className="p-3 border-t border-gray-200">
         <div className="flex gap-1">
-          <button className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 px-4 rounded-lg border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[1px_1px_0_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-xs">
+          <button className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 px-4 rounded-lg border-2 border-black dark-shadow hover:light-shadow hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-xs">
             Generate Style
           </button>
           <button className="w-8 h-8 border-2 border-black rounded-lg bg-gray-50 flex items-center justify-center">
