@@ -420,6 +420,7 @@ const ImageCanvas = forwardRef(function ImageCanvas(
               selectedStaticBorder={selectedStaticBorder}
               containerSize={containerSize}
               borderOpacity={borderOpacity}
+              borderCapStyle={borderCapStyle}
             />
           )}
 
