@@ -218,6 +218,26 @@ export default function BorderPanel({
             <p className="text-gray-600 text-xs mb-2">Choose from pre-made circular border designs.</p>
           </div>
           
+          {/* Border Cap Style for Static Borders */}
+          <div>
+            <span className="font-bold text-xs mb-2 block">Border Cap Style</span>
+            <div className="grid grid-cols-3 gap-1">
+              {["rounded", "square", "beveled"].map((style) => (
+                <button
+                  key={style}
+                  onClick={() => setBorderCapStyle(style as "rounded" | "square" | "beveled")}
+                  className={`px-2 py-1 border-2 border-black rounded-md z-50 text-xs font-medium transition-all ${
+                    borderCapStyle === style
+                      ? "bg-gray-200 text-black light-shadow "
+                      : "bg-white hover:bg-gray-50 dark-shadow"
+                  }`}
+                >
+                  {style.charAt(0).toUpperCase() + style.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          
           {/* Category Tabs */}
           <div className="flex flex-wrap gap-1">
             {staticBorderCategories.map((category) => (
