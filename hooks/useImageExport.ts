@@ -346,9 +346,10 @@ export function useImageExport(props: UseImageExportProps) {
         const y = scaledBorderWidth / 2 + scaledBorderOffset
         ctx.rect(x, y, squareSize, squareSize)
       } else if (borderCapStyle === "beveled") {
-        const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
-        const x = scaledBorderWidth / 2 + scaledBorderOffset
-        const y = scaledBorderWidth / 2 + scaledBorderOffset
+        // For beveled borders, position at the edge of the canvas (no borderOffset) - same as border drawing
+        const squareSize = exportSize - scaledBorderWidth
+        const x = scaledBorderWidth / 2
+        const y = scaledBorderWidth / 2
         const cornerRadius = 10
         ctx.moveTo(x + cornerRadius, y)
         ctx.lineTo(x + squareSize - cornerRadius, y)
@@ -424,98 +425,87 @@ export function useImageExport(props: UseImageExportProps) {
         if (isFullBorder) {
           ctx.rect(x, y, size, size)
         } else {
-          // For partial square borders, we need to calculate which sides to draw
+          // For partial square borders, draw as a continuous path to avoid corner artifacts
           const sideLength = size
           const totalPerimeter = 4 * sideLength
           const drawnLength = squareArc
           
-          let currentLength = 0
-          const sides = [
-            { x1: x, y1: y, x2: x + sideLength, y2: y }, // top
-            { x1: x + sideLength, y1: y, x2: x + sideLength, y2: y + sideLength }, // right
-            { x1: x + sideLength, y1: y + sideLength, x2: x, y2: y + sideLength }, // bottom
-            { x1: x, y1: y + sideLength, x2: x, y2: y } // left
-          ]
+          // Calculate how many complete sides we can draw
+          const completeSides = Math.floor(drawnLength / sideLength)
+          const remainingLength = drawnLength - (completeSides * sideLength)
           
-          for (let i = 0; i < sides.length; i++) {
-            const side = sides[i]
-            const sideLengthPx = Math.sqrt(Math.pow(side.x2 - side.x1, 2) + Math.pow(side.y2 - side.y1, 2))
+          // Start drawing from the top-left corner
+          ctx.moveTo(x, y)
+          
+          // Draw complete sides
+          if (completeSides >= 1) {
+            ctx.lineTo(x + sideLength, y) // top side
+          }
+          if (completeSides >= 2) {
+            ctx.lineTo(x + sideLength, y + sideLength) // right side
+          }
+          if (completeSides >= 3) {
+            ctx.lineTo(x, y + sideLength) // bottom side
+          }
+          if (completeSides >= 4) {
+            ctx.lineTo(x, y) // left side (complete)
+          }
+          
+          // Draw partial side if needed
+          if (remainingLength > 0 && completeSides < 4) {
+            const sideIndex = completeSides % 4
+            let partialX = 0, partialY = 0
             
-            if (currentLength + sideLengthPx <= drawnLength) {
-              // Draw full side
-              ctx.moveTo(side.x1, side.y1)
-              ctx.lineTo(side.x2, side.y2)
-              currentLength += sideLengthPx
-            } else if (currentLength < drawnLength) {
-              // Draw partial side
-              const remainingLength = drawnLength - currentLength
-              const ratio = remainingLength / sideLengthPx
-              const partialX = side.x1 + (side.x2 - side.x1) * ratio
-              const partialY = side.y1 + (side.y2 - side.y1) * ratio
-              
-              ctx.moveTo(side.x1, side.y1)
-              ctx.lineTo(partialX, partialY)
-              break
-            } else {
-              break
+            switch (sideIndex) {
+              case 0: // top side
+                partialX = x + remainingLength
+                partialY = y
+                break
+              case 1: // right side
+                partialX = x + sideLength
+                partialY = y + remainingLength
+                break
+              case 2: // bottom side
+                partialX = x + sideLength - remainingLength
+                partialY = y + sideLength
+                break
+              case 3: // left side
+                partialX = x
+                partialY = y + sideLength - remainingLength
+                break
             }
+            
+            ctx.lineTo(partialX, partialY)
           }
         }
       } else if (borderCapStyle === "beveled") {
+        // For beveled borders, use the same positioning as BorderSVG component
         const size = exportSize - borderWidth - borderOffset * 2
         const x = borderWidth / 2 + borderOffset
         const y = borderWidth / 2 + borderOffset
         const cornerRadius = 10
         
-        if (isFullBorder) {
-          ctx.moveTo(x + cornerRadius, y)
-          ctx.lineTo(x + size - cornerRadius, y)
-          ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
-          ctx.lineTo(x + size, y + size - cornerRadius)
-          ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
-          ctx.lineTo(x + cornerRadius, y + size)
-          ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
-          ctx.lineTo(x, y + cornerRadius)
-          ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
-          ctx.closePath()
-        } else {
-          // For partial beveled borders, use the same logic as square but with rounded corners
-          // This is a simplified version - for full accuracy, we'd need to calculate arc segments
-          const sideLength = size
-          const totalPerimeter = 4 * sideLength
-          const drawnLength = squareArc
+        // Always draw the full rounded rectangle path (like SVG rect with rx)
+        ctx.moveTo(x + cornerRadius, y)
+        ctx.lineTo(x + size - cornerRadius, y)
+        ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
+        ctx.lineTo(x + size, y + size - cornerRadius)
+        ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
+        ctx.lineTo(x + cornerRadius, y + size)
+        ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
+        ctx.lineTo(x, y + cornerRadius)
+        ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
+        ctx.closePath()
+        
+        // For partial borders, use line dash (same as SVG strokeDasharray)
+        if (!isFullBorder) {
+          const sideLength = size - (2 * cornerRadius)
+          const totalPerimeter = 4 * sideLength + (2 * Math.PI * cornerRadius)
+          const drawnLength = totalPerimeter * (borderAmount / 100)
+          const gapLength = totalPerimeter - drawnLength
           
-          let currentLength = 0
-          const sides = [
-            { x1: x + cornerRadius, y1: y, x2: x + size - cornerRadius, y2: y }, // top
-            { x1: x + size, y1: y + cornerRadius, x2: x + size, y2: y + size - cornerRadius }, // right
-            { x1: x + size - cornerRadius, y1: y + size, x2: x + cornerRadius, y2: y + size }, // bottom
-            { x1: x, y1: y + size - cornerRadius, x2: x, y2: y + cornerRadius } // left
-          ]
-          
-          for (let i = 0; i < sides.length; i++) {
-            const side = sides[i]
-            const sideLengthPx = Math.sqrt(Math.pow(side.x2 - side.x1, 2) + Math.pow(side.y2 - side.y1, 2))
-            
-            if (currentLength + sideLengthPx <= drawnLength) {
-              // Draw full side
-              ctx.moveTo(side.x1, side.y1)
-              ctx.lineTo(side.x2, side.y2)
-              currentLength += sideLengthPx
-            } else if (currentLength < drawnLength) {
-              // Draw partial side
-              const remainingLength = drawnLength - currentLength
-              const ratio = remainingLength / sideLengthPx
-              const partialX = side.x1 + (side.x2 - side.x1) * ratio
-              const partialY = side.y1 + (side.y2 - side.y1) * ratio
-              
-              ctx.moveTo(side.x1, side.y1)
-              ctx.lineTo(partialX, partialY)
-              break
-            } else {
-              break
-            }
-          }
+          ctx.setLineDash([drawnLength, gapLength])
+          ctx.lineDashOffset = 0
         }
       }
       
@@ -544,11 +534,17 @@ export function useImageExport(props: UseImageExportProps) {
       } else {
         ctx.strokeStyle = borderColor
       }
-      ctx.globalAlpha = borderOpacity
-      ctx.lineWidth = borderWidth
-      ctx.stroke()
-      ctx.globalAlpha = 1
-      ctx.restore()
+             ctx.globalAlpha = borderOpacity
+       ctx.lineWidth = borderWidth
+       ctx.stroke()
+       ctx.globalAlpha = 1
+       
+       // Reset line dash if it was set for partial borders
+       if (borderCapStyle === "beveled" && !isFullBorder) {
+         ctx.setLineDash([])
+       }
+       
+       ctx.restore()
     }
   
 // Draw static border image if in static border mode
