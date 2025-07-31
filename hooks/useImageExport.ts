@@ -485,27 +485,112 @@ export function useImageExport(props: UseImageExportProps) {
         const y = borderWidth / 2 + borderOffset
         const cornerRadius = 10
         
-        // Always draw the full rounded rectangle path (like SVG rect with rx)
-        ctx.moveTo(x + cornerRadius, y)
-        ctx.lineTo(x + size - cornerRadius, y)
-        ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
-        ctx.lineTo(x + size, y + size - cornerRadius)
-        ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
-        ctx.lineTo(x + cornerRadius, y + size)
-        ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
-        ctx.lineTo(x, y + cornerRadius)
-        ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
-        ctx.closePath()
-        
-        // For partial borders, use line dash (same as SVG strokeDasharray)
-        if (!isFullBorder) {
-          const sideLength = size - (2 * cornerRadius)
-          const totalPerimeter = 4 * sideLength + (2 * Math.PI * cornerRadius)
+        if (isFullBorder) {
+          // Draw full rounded rectangle
+          ctx.moveTo(x + cornerRadius, y)
+          ctx.lineTo(x + size - cornerRadius, y)
+          ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
+          ctx.lineTo(x + size, y + size - cornerRadius)
+          ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
+          ctx.lineTo(x + cornerRadius, y + size)
+          ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
+          ctx.lineTo(x, y + cornerRadius)
+          ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
+          ctx.closePath()
+        } else {
+          // For partial beveled borders, draw as a continuous path with rounded corners
+          const sideLength = size - (2 * cornerRadius) // Length of straight sides
+          const totalPerimeter = 4 * sideLength + (2 * Math.PI * cornerRadius) // Perimeter including corner arcs
           const drawnLength = totalPerimeter * (borderAmount / 100)
-          const gapLength = totalPerimeter - drawnLength
           
-          ctx.setLineDash([drawnLength, gapLength])
-          ctx.lineDashOffset = 0
+          // Calculate how much of each side to draw
+          const straightSideLength = sideLength
+          const cornerArcLength = (Math.PI * cornerRadius) / 2 // Length of each corner arc
+          
+          let remainingLength = drawnLength
+          let currentX = x + cornerRadius
+          let currentY = y
+          
+          // Start drawing from top-left corner
+          ctx.moveTo(currentX, currentY)
+          
+          // Draw top side
+          if (remainingLength > 0) {
+            const topSideLength = Math.min(remainingLength, straightSideLength)
+            currentX += topSideLength
+            ctx.lineTo(currentX, currentY)
+            remainingLength -= topSideLength
+          }
+          
+          // Draw top-right corner
+          if (remainingLength > 0 && remainingLength <= cornerArcLength) {
+            const cornerAngle = (remainingLength / cornerRadius) * (180 / Math.PI)
+            ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
+            ctx.lineTo(x + size, y + cornerRadius)
+            remainingLength = 0
+          } else if (remainingLength > cornerArcLength) {
+            ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
+            currentX = x + size
+            currentY = y + cornerRadius
+            remainingLength -= cornerArcLength
+          }
+          
+          // Draw right side
+          if (remainingLength > 0) {
+            const rightSideLength = Math.min(remainingLength, straightSideLength)
+            currentY += rightSideLength
+            ctx.lineTo(currentX, currentY)
+            remainingLength -= rightSideLength
+          }
+          
+          // Draw bottom-right corner
+          if (remainingLength > 0 && remainingLength <= cornerArcLength) {
+            const cornerAngle = (remainingLength / cornerRadius) * (180 / Math.PI)
+            ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
+            ctx.lineTo(x + size - cornerRadius, y + size)
+            remainingLength = 0
+          } else if (remainingLength > cornerArcLength) {
+            ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
+            currentX = x + size - cornerRadius
+            currentY = y + size
+            remainingLength -= cornerArcLength
+          }
+          
+          // Draw bottom side
+          if (remainingLength > 0) {
+            const bottomSideLength = Math.min(remainingLength, straightSideLength)
+            currentX -= bottomSideLength
+            ctx.lineTo(currentX, currentY)
+            remainingLength -= bottomSideLength
+          }
+          
+          // Draw bottom-left corner
+          if (remainingLength > 0 && remainingLength <= cornerArcLength) {
+            const cornerAngle = (remainingLength / cornerRadius) * (180 / Math.PI)
+            ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
+            ctx.lineTo(x, y + size - cornerRadius)
+            remainingLength = 0
+          } else if (remainingLength > cornerArcLength) {
+            ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
+            currentX = x
+            currentY = y + size - cornerRadius
+            remainingLength -= cornerArcLength
+          }
+          
+          // Draw left side
+          if (remainingLength > 0) {
+            const leftSideLength = Math.min(remainingLength, straightSideLength)
+            currentY -= leftSideLength
+            ctx.lineTo(currentX, currentY)
+            remainingLength -= leftSideLength
+          }
+          
+          // Draw top-left corner
+          if (remainingLength > 0) {
+            const cornerAngle = (remainingLength / cornerRadius) * (180 / Math.PI)
+            ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
+            ctx.lineTo(x + cornerRadius, y)
+          }
         }
       }
       
@@ -514,33 +599,38 @@ export function useImageExport(props: UseImageExportProps) {
         ctx.restore()
       }
       
-      if (borderType === "gradient") {
-        let borderGradient
-        if (borderGradientDirection === "to right") {
-          borderGradient = ctx.createLinearGradient(0, 0, exportSize, 0)
-        } else if (borderGradientDirection === "to bottom") {
-          borderGradient = ctx.createLinearGradient(0, 0, 0, exportSize)
-        } else if (borderGradientDirection === "45deg") {
-          borderGradient = ctx.createLinearGradient(0, exportSize, exportSize, 0)
-        } else if (borderGradientDirection === "circle") {
-          borderGradient = ctx.createRadialGradient(exportSize/2, exportSize/2, 0, exportSize/2, exportSize/2, exportSize/2)
-        } else {
-          // Default diagonal gradient
-          borderGradient = ctx.createLinearGradient(0, 0, exportSize, exportSize)
-        }
-        borderGradient.addColorStop(0, borderGradientColors.start)
-        borderGradient.addColorStop(1, borderGradientColors.end)
-        ctx.strokeStyle = borderGradient
-      } else {
-        ctx.strokeStyle = borderColor
-      }
-             ctx.globalAlpha = borderOpacity
+             if (borderType === "gradient") {
+         let borderGradient
+         if (borderGradientDirection === "to right") {
+           borderGradient = ctx.createLinearGradient(0, 0, exportSize, 0)
+         } else if (borderGradientDirection === "to bottom") {
+           borderGradient = ctx.createLinearGradient(0, 0, 0, exportSize)
+         } else if (borderGradientDirection === "45deg") {
+           borderGradient = ctx.createLinearGradient(0, exportSize, exportSize, 0)
+         } else if (borderGradientDirection === "circle") {
+           borderGradient = ctx.createRadialGradient(exportSize/2, exportSize/2, 0, exportSize/2, exportSize/2, exportSize/2)
+         } else {
+           // Default diagonal gradient
+           borderGradient = ctx.createLinearGradient(0, 0, exportSize, exportSize)
+         }
+         borderGradient.addColorStop(0, borderGradientColors.start)
+         borderGradient.addColorStop(1, borderGradientColors.end)
+         ctx.strokeStyle = borderGradient
+       } else {
+         ctx.strokeStyle = borderColor
+       }
+       
+       // Set line join and cap for consistent border appearance
+       ctx.lineJoin = "bevel"
+       ctx.lineCap = "butt"
+       
+       ctx.globalAlpha = borderOpacity
        ctx.lineWidth = borderWidth
        ctx.stroke()
        ctx.globalAlpha = 1
        
        // Reset line dash if it was set for partial borders
-       if (borderCapStyle === "beveled" && !isFullBorder) {
+       if ((borderCapStyle === "beveled" || borderCapStyle === "square") && !isFullBorder) {
          ctx.setLineDash([])
        }
        
