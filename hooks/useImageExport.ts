@@ -420,6 +420,17 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.globalAlpha = 1
       ctx.restore()
     }
+    // Draw static border image if in static border mode
+if (borderMode === "static" && selectedStaticBorder) {
+  const borderImg = new window.Image();
+  borderImg.crossOrigin = "anonymous";
+  borderImg.src = selectedStaticBorder;
+  await new Promise((resolve, reject) => {
+    borderImg.onload = resolve;
+    borderImg.onerror = reject;
+  });
+  ctx.drawImage(borderImg, 0, 0, exportSize, exportSize);
+}
 
     // Draw text
     if (showText && textContent) {
