@@ -374,38 +374,153 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.save()
       ctx.beginPath()
       const halfBorder = borderWidth / 2
+      const center = exportSize / 2
+      
+      // Calculate border radius based on offset (same logic as useBorderProps)
+      const edgeRadius = exportSize / 2 - borderWidth / 2
+      const borderRadius = edgeRadius - borderOffset
+      const minRadius = borderWidth / 2
+      const clampedRadius = Math.max(minRadius, borderRadius)
+      
+      // Calculate arc length for border amount
+      const circleCircumference = 2 * Math.PI * clampedRadius
+      const arcLength = circleCircumference * (borderAmount / 100)
+      
+      // For square borders, calculate based on the adjusted size
+      const squareSize = exportSize - (2 * borderOffset) - borderWidth
+      const squarePerimeter = 4 * squareSize
+      const squareArc = squarePerimeter * (borderAmount / 100)
+      
+      // Check if it's a full border (100%)
+      const isFullBorder = borderAmount >= 99
+      
       if (borderCapStyle === "rounded") {
-        ctx.arc(exportSize / 2, exportSize / 2, exportSize / 2 - halfBorder - borderOffset, 0, 2 * Math.PI)
+        // For partial borders, we need to draw an arc instead of a full circle
+        if (isFullBorder) {
+          ctx.arc(center, center, clampedRadius, 0, 2 * Math.PI)
+        } else {
+          // Calculate start and end angles for the arc
+          const startAngle = (borderRotation - 90) * (Math.PI / 180) // Convert to radians and adjust for circle start position
+          const arcAngle = (arcLength / clampedRadius) * (180 / Math.PI) // Convert arc length to degrees
+          const endAngle = startAngle + (arcAngle * Math.PI / 180)
+          
+          ctx.arc(center, center, clampedRadius, startAngle, endAngle)
+        }
       } else if (borderCapStyle === "square") {
         const size = exportSize - borderWidth - borderOffset * 2
-        ctx.rect(borderWidth / 2 + borderOffset, borderWidth / 2 + borderOffset, size, size)
+        const x = borderWidth / 2 + borderOffset
+        const y = borderWidth / 2 + borderOffset
+        
+        if (isFullBorder) {
+          ctx.rect(x, y, size, size)
+        } else {
+          // For partial square borders, we need to calculate which sides to draw
+          const sideLength = size
+          const totalPerimeter = 4 * sideLength
+          const drawnLength = squareArc
+          
+          let currentLength = 0
+          const sides = [
+            { x1: x, y1: y, x2: x + sideLength, y2: y }, // top
+            { x1: x + sideLength, y1: y, x2: x + sideLength, y2: y + sideLength }, // right
+            { x1: x + sideLength, y1: y + sideLength, x2: x, y2: y + sideLength }, // bottom
+            { x1: x, y1: y + sideLength, x2: x, y2: y } // left
+          ]
+          
+          for (let i = 0; i < sides.length; i++) {
+            const side = sides[i]
+            const sideLengthPx = Math.sqrt(Math.pow(side.x2 - side.x1, 2) + Math.pow(side.y2 - side.y1, 2))
+            
+            if (currentLength + sideLengthPx <= drawnLength) {
+              // Draw full side
+              ctx.moveTo(side.x1, side.y1)
+              ctx.lineTo(side.x2, side.y2)
+              currentLength += sideLengthPx
+            } else if (currentLength < drawnLength) {
+              // Draw partial side
+              const remainingLength = drawnLength - currentLength
+              const ratio = remainingLength / sideLengthPx
+              const partialX = side.x1 + (side.x2 - side.x1) * ratio
+              const partialY = side.y1 + (side.y2 - side.y1) * ratio
+              
+              ctx.moveTo(side.x1, side.y1)
+              ctx.lineTo(partialX, partialY)
+              break
+            } else {
+              break
+            }
+          }
+        }
       } else if (borderCapStyle === "beveled") {
         const size = exportSize - borderWidth - borderOffset * 2
         const x = borderWidth / 2 + borderOffset
         const y = borderWidth / 2 + borderOffset
         const cornerRadius = 10
-        ctx.moveTo(x + cornerRadius, y)
-        ctx.lineTo(x + size - cornerRadius, y)
-        ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
-        ctx.lineTo(x + size, y + size - cornerRadius)
-        ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
-        ctx.lineTo(x + cornerRadius, y + size)
-        ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
-        ctx.lineTo(x, y + cornerRadius)
-        ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
-        ctx.closePath()
+        
+        if (isFullBorder) {
+          ctx.moveTo(x + cornerRadius, y)
+          ctx.lineTo(x + size - cornerRadius, y)
+          ctx.quadraticCurveTo(x + size, y, x + size, y + cornerRadius)
+          ctx.lineTo(x + size, y + size - cornerRadius)
+          ctx.quadraticCurveTo(x + size, y + size, x + size - cornerRadius, y + size)
+          ctx.lineTo(x + cornerRadius, y + size)
+          ctx.quadraticCurveTo(x, y + size, x, y + size - cornerRadius)
+          ctx.lineTo(x, y + cornerRadius)
+          ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
+          ctx.closePath()
+        } else {
+          // For partial beveled borders, use the same logic as square but with rounded corners
+          // This is a simplified version - for full accuracy, we'd need to calculate arc segments
+          const sideLength = size
+          const totalPerimeter = 4 * sideLength
+          const drawnLength = squareArc
+          
+          let currentLength = 0
+          const sides = [
+            { x1: x + cornerRadius, y1: y, x2: x + size - cornerRadius, y2: y }, // top
+            { x1: x + size, y1: y + cornerRadius, x2: x + size, y2: y + size - cornerRadius }, // right
+            { x1: x + size - cornerRadius, y1: y + size, x2: x + cornerRadius, y2: y + size }, // bottom
+            { x1: x, y1: y + size - cornerRadius, x2: x, y2: y + cornerRadius } // left
+          ]
+          
+          for (let i = 0; i < sides.length; i++) {
+            const side = sides[i]
+            const sideLengthPx = Math.sqrt(Math.pow(side.x2 - side.x1, 2) + Math.pow(side.y2 - side.y1, 2))
+            
+            if (currentLength + sideLengthPx <= drawnLength) {
+              // Draw full side
+              ctx.moveTo(side.x1, side.y1)
+              ctx.lineTo(side.x2, side.y2)
+              currentLength += sideLengthPx
+            } else if (currentLength < drawnLength) {
+              // Draw partial side
+              const remainingLength = drawnLength - currentLength
+              const ratio = remainingLength / sideLengthPx
+              const partialX = side.x1 + (side.x2 - side.x1) * ratio
+              const partialY = side.y1 + (side.y2 - side.y1) * ratio
+              
+              ctx.moveTo(side.x1, side.y1)
+              ctx.lineTo(partialX, partialY)
+              break
+            } else {
+              break
+            }
+          }
+        }
       }
+      
       if (borderType === "gradient") {
         let borderGradient
         if (borderGradientDirection === "to right") {
           borderGradient = ctx.createLinearGradient(0, 0, exportSize, 0)
         } else if (borderGradientDirection === "to bottom") {
           borderGradient = ctx.createLinearGradient(0, 0, 0, exportSize)
-        } else if (borderGradientDirection === "to top right") {
+        } else if (borderGradientDirection === "45deg") {
           borderGradient = ctx.createLinearGradient(0, exportSize, exportSize, 0)
-        } else if (borderGradientDirection === "to bottom left") {
-          borderGradient = ctx.createLinearGradient(exportSize, 0, 0, exportSize)
+        } else if (borderGradientDirection === "circle") {
+          borderGradient = ctx.createRadialGradient(exportSize/2, exportSize/2, 0, exportSize/2, exportSize/2, exportSize/2)
         } else {
+          // Default diagonal gradient
           borderGradient = ctx.createLinearGradient(0, 0, exportSize, exportSize)
         }
         borderGradient.addColorStop(0, borderGradientColors.start)
