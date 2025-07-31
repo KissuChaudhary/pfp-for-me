@@ -170,25 +170,37 @@ export function useImageExport(props: UseImageExportProps) {
     const scaledPositionY = position.y
     
     // Create clipping path for the entire canvas based on border cap style
+    // This should match exactly what the preview shows
     ctx.save()
     ctx.beginPath()
-    const canvasCenter = exportSize / 2
-    const canvasRadius = exportSize / 2
+    
+    // Use the same border calculations as the preview (PixArtOverlay.tsx)
+    const borderCenter = exportSize / 2
+    const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
+    const x = scaledBorderWidth / 2 + scaledBorderOffset
+    const y = scaledBorderWidth / 2 + scaledBorderOffset
     
     if (borderCapStyle === "rounded") {
-      ctx.arc(canvasCenter, canvasCenter, canvasRadius, 0, 2 * Math.PI)
+      const edgeRadius = exportSize / 2 - scaledBorderWidth / 2
+      const borderRadius = edgeRadius - scaledBorderOffset
+      const minRadius = scaledBorderWidth / 2
+      const clampedRadius = Math.max(minRadius, borderRadius)
+      ctx.arc(borderCenter, borderCenter, clampedRadius, 0, 2 * Math.PI)
     } else if (borderCapStyle === "square") {
-      ctx.rect(0, 0, exportSize, exportSize)
+      ctx.rect(x, y, squareSize, squareSize)
     } else if (borderCapStyle === "beveled") {
-      const bevel = 0.1 * exportSize
-      ctx.moveTo(bevel, 0)
-      ctx.lineTo(exportSize - bevel, 0)
-      ctx.lineTo(exportSize, bevel)
-      ctx.lineTo(exportSize, exportSize - bevel)
-      ctx.lineTo(exportSize - bevel, exportSize)
-      ctx.lineTo(bevel, exportSize)
-      ctx.lineTo(0, exportSize - bevel)
-      ctx.lineTo(0, bevel)
+      const cornerRadius = 10 // Same as preview
+      
+      // Create rounded rectangle path exactly like the preview
+      ctx.moveTo(x + cornerRadius, y)
+      ctx.lineTo(x + squareSize - cornerRadius, y)
+      ctx.quadraticCurveTo(x + squareSize, y, x + squareSize, y + cornerRadius)
+      ctx.lineTo(x + squareSize, y + squareSize - cornerRadius)
+      ctx.quadraticCurveTo(x + squareSize, y + squareSize, x + squareSize - cornerRadius, y + squareSize)
+      ctx.lineTo(x + cornerRadius, y + squareSize)
+      ctx.quadraticCurveTo(x, y + squareSize, x, y + squareSize - cornerRadius)
+      ctx.lineTo(x, y + cornerRadius)
+      ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
       ctx.closePath()
     }
     ctx.clip()
@@ -328,58 +340,21 @@ export function useImageExport(props: UseImageExportProps) {
       }
     })()
     
-    // Draw Pix Art overlay (after image but before borders)
+    // Draw Pix Art overlay (after background but before image)
+    // Since canvas-wide clipping is already applied, no additional clipping needed
     if (selectedPixArt) {
       const pixArtImage = new window.Image()
       pixArtImage.crossOrigin = "anonymous"
       pixArtImage.src = selectedPixArt
       await new Promise((resolve) => (pixArtImage.onload = resolve))
       
-      ctx.save()
-      
-      // Apply the EXACT same clipping path as the border
-      ctx.beginPath()
-      
-      if (borderCapStyle === "rounded") {
-        const borderCenter = exportSize / 2
-        const edgeRadius = exportSize / 2 - scaledBorderWidth / 2
-        const borderRadius = edgeRadius - scaledBorderOffset
-        const minRadius = scaledBorderWidth / 2
-        const clampedRadius = Math.max(minRadius, borderRadius)
-        ctx.arc(borderCenter, borderCenter, clampedRadius, 0, 2 * Math.PI)
-      } else if (borderCapStyle === "square") {
-        const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
-        const x = scaledBorderWidth / 2 + scaledBorderOffset
-        const y = scaledBorderWidth / 2 + scaledBorderOffset
-        ctx.rect(x, y, squareSize, squareSize)
-      } else if (borderCapStyle === "beveled") {
-        const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
-        const x = scaledBorderWidth / 2 + scaledBorderOffset
-        const y = scaledBorderWidth / 2 + scaledBorderOffset
-        const cornerRadius = 10 // EXACT same as border
-        
-        // Create rounded rectangle path EXACTLY like the border
-        ctx.moveTo(x + cornerRadius, y)
-        ctx.lineTo(x + squareSize - cornerRadius, y)
-        ctx.quadraticCurveTo(x + squareSize, y, x + squareSize, y + cornerRadius)
-        ctx.lineTo(x + squareSize, y + squareSize - cornerRadius)
-        ctx.quadraticCurveTo(x + squareSize, y + squareSize, x + squareSize - cornerRadius, y + squareSize)
-        ctx.lineTo(x + cornerRadius, y + squareSize)
-        ctx.quadraticCurveTo(x, y + squareSize, x, y + squareSize - cornerRadius)
-        ctx.lineTo(x, y + cornerRadius)
-        ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
-        ctx.closePath()
-      }
-      ctx.clip()
-      
       // Calculate size and position for pix art (perfect centering)
       const scaledSize = exportSize * (pixArtSize / 100)
       const offsetX = (exportSize - scaledSize) / 2
       const offsetY = (exportSize - scaledSize) / 2
       
-      // Draw pix art with size scaling (perfect centering, creates empty space in center when size > 100%)
+      // Draw pix art with size scaling (will be automatically clipped by canvas-wide clipping)
       ctx.drawImage(pixArtImage, offsetX, offsetY, scaledSize, scaledSize)
-      ctx.restore()
     }
     
     // Draw uploaded image with all transforms and filters (use full canvas center)
