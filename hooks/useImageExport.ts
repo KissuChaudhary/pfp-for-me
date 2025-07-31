@@ -420,7 +420,8 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.globalAlpha = 1
       ctx.restore()
     }
-    // Draw static border image if in static border mode
+  
+// Draw static border image if in static border mode
 if (borderMode === "static" && selectedStaticBorder) {
   const borderImg = new window.Image();
   borderImg.crossOrigin = "anonymous";
@@ -429,7 +430,30 @@ if (borderMode === "static" && selectedStaticBorder) {
     borderImg.onload = resolve;
     borderImg.onerror = reject;
   });
+  ctx.save(); // Save before applying clip
+  ctx.beginPath();
+  if (borderCapStyle === "rounded") {
+    // Circle
+    ctx.arc(exportSize / 2, exportSize / 2, exportSize / 2, 0, Math.PI * 2);
+  } else if (borderCapStyle === "square") {
+    // Square
+    ctx.rect(0, 0, exportSize, exportSize);
+  } else if (borderCapStyle === "beveled") {
+    // Beveled (same logic as before)
+    const bevel = 0.1 * exportSize;
+    ctx.moveTo(bevel, 0);
+    ctx.lineTo(exportSize - bevel, 0);
+    ctx.lineTo(exportSize, bevel);
+    ctx.lineTo(exportSize, exportSize - bevel);
+    ctx.lineTo(exportSize - bevel, exportSize);
+    ctx.lineTo(bevel, exportSize);
+    ctx.lineTo(0, exportSize - bevel);
+    ctx.lineTo(0, bevel);
+    ctx.closePath();
+  }
+  ctx.clip();
   ctx.drawImage(borderImg, 0, 0, exportSize, exportSize);
+  ctx.restore(); // Restore after drawing
 }
 
     // Draw text
