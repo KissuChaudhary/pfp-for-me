@@ -1,5 +1,6 @@
 import { useCallback } from "react"
 import { Pattern, getColoredPattern } from "@/lib/patterns"
+import { calculateClippingPath, calculateContainerClippingPath } from "@/lib/clippingUtils"
 
 interface UseImageExportProps {
   imageUrl: string | null
@@ -169,28 +170,15 @@ export function useImageExport(props: UseImageExportProps) {
     const scaledPositionX = position.x
     const scaledPositionY = position.y
     
-    // Create clipping path for the entire canvas based on border cap style
+    // Create clipping path for the entire canvas based on border cap style using shared utility
     ctx.save()
-    ctx.beginPath()
-    const canvasCenter = exportSize / 2
-    const canvasRadius = exportSize / 2
-    
-    if (borderCapStyle === "rounded") {
-      ctx.arc(canvasCenter, canvasCenter, canvasRadius, 0, 2 * Math.PI)
-    } else if (borderCapStyle === "square") {
-      ctx.rect(0, 0, exportSize, exportSize)
-    } else if (borderCapStyle === "beveled") {
-      const bevel = 0.1 * exportSize
-      ctx.moveTo(bevel, 0)
-      ctx.lineTo(exportSize - bevel, 0)
-      ctx.lineTo(exportSize, bevel)
-      ctx.lineTo(exportSize, exportSize - bevel)
-      ctx.lineTo(exportSize - bevel, exportSize)
-      ctx.lineTo(bevel, exportSize)
-      ctx.lineTo(0, exportSize - bevel)
-      ctx.lineTo(0, bevel)
-      ctx.closePath()
-    }
+    const containerClipping = calculateContainerClippingPath({
+      containerSize: exportSize,
+      borderWidth: scaledBorderWidth,
+      borderOffset: scaledBorderOffset,
+      borderCapStyle,
+    })
+    containerClipping.drawCanvasClipPath(ctx)
     ctx.clip()
     
     // Draw background first (now clipped to border shape)
@@ -328,7 +316,7 @@ export function useImageExport(props: UseImageExportProps) {
       }
     })()
     
-    // Draw Pix Art overlay (after image but before borders)
+    // Draw Pix Art overlay (after background/image but before borders) with proper clipping
     if (selectedPixArt) {
       const pixArtImage = new window.Image()
       pixArtImage.crossOrigin = "anonymous"
@@ -337,39 +325,14 @@ export function useImageExport(props: UseImageExportProps) {
       
       ctx.save()
       
-      // Apply the EXACT same clipping path as the border
-      ctx.beginPath()
-      
-      if (borderCapStyle === "rounded") {
-        const borderCenter = exportSize / 2
-        const edgeRadius = exportSize / 2 - scaledBorderWidth / 2
-        const borderRadius = edgeRadius - scaledBorderOffset
-        const minRadius = scaledBorderWidth / 2
-        const clampedRadius = Math.max(minRadius, borderRadius)
-        ctx.arc(borderCenter, borderCenter, clampedRadius, 0, 2 * Math.PI)
-      } else if (borderCapStyle === "square") {
-        const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
-        const x = scaledBorderWidth / 2 + scaledBorderOffset
-        const y = scaledBorderWidth / 2 + scaledBorderOffset
-        ctx.rect(x, y, squareSize, squareSize)
-      } else if (borderCapStyle === "beveled") {
-        const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
-        const x = scaledBorderWidth / 2 + scaledBorderOffset
-        const y = scaledBorderWidth / 2 + scaledBorderOffset
-        const cornerRadius = 10 // EXACT same as border
-        
-        // Create rounded rectangle path EXACTLY like the border
-        ctx.moveTo(x + cornerRadius, y)
-        ctx.lineTo(x + squareSize - cornerRadius, y)
-        ctx.quadraticCurveTo(x + squareSize, y, x + squareSize, y + cornerRadius)
-        ctx.lineTo(x + squareSize, y + squareSize - cornerRadius)
-        ctx.quadraticCurveTo(x + squareSize, y + squareSize, x + squareSize - cornerRadius, y + squareSize)
-        ctx.lineTo(x + cornerRadius, y + squareSize)
-        ctx.quadraticCurveTo(x, y + squareSize, x, y + squareSize - cornerRadius)
-        ctx.lineTo(x, y + cornerRadius)
-        ctx.quadraticCurveTo(x, y, x + cornerRadius, y)
-        ctx.closePath()
-      }
+      // Use shared clipping utility for consistent clipping
+      const pixArtClipping = calculateClippingPath({
+        containerSize: exportSize,
+        borderWidth: scaledBorderWidth,
+        borderOffset: scaledBorderOffset,
+        borderCapStyle,
+      })
+      pixArtClipping.drawCanvasClipPath(ctx)
       ctx.clip()
       
       // Calculate size and position for pix art (perfect centering)
@@ -377,12 +340,12 @@ export function useImageExport(props: UseImageExportProps) {
       const offsetX = (exportSize - scaledSize) / 2
       const offsetY = (exportSize - scaledSize) / 2
       
-      // Draw pix art with size scaling (perfect centering, creates empty space in center when size > 100%)
+      // Draw pix art with size scaling (perfect centering)
       ctx.drawImage(pixArtImage, offsetX, offsetY, scaledSize, scaledSize)
       ctx.restore()
     }
     
-    // Draw uploaded image with all transforms and filters (use full canvas center)
+    // Draw uploaded image with all transforms and filters in its own save/restore block
     if (imageUrl) {
       const img = new window.Image()
       img.crossOrigin = "anonymous"
@@ -422,13 +385,12 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.drawImage(img, -finalDrawWidth / 2, -finalDrawHeight / 2, finalDrawWidth, finalDrawHeight)
       ctx.restore()
     }
-    ctx.restore()
     
-    ctx.restore() // Restore the outer clipping path
+    ctx.restore() // Restore the container clipping path
     
-    // Draw border (after pix art and drip art front)
+    // Draw border (after pix art and image) with proper z-order and clipping
     if (borderMode === "static" && selectedStaticBorder) {
-      // Handle static border (image overlay)
+      // Handle static border (image overlay) with proper clipping
       const borderImage = new window.Image()
       borderImage.crossOrigin = "anonymous"
       borderImage.src = selectedStaticBorder
@@ -436,6 +398,17 @@ export function useImageExport(props: UseImageExportProps) {
       
       ctx.save()
       ctx.globalAlpha = borderOpacity / 100
+      
+      // Apply the same clipping as preview to static border
+      const staticBorderClipping = calculateClippingPath({
+        containerSize: exportSize,
+        borderWidth: scaledBorderWidth,
+        borderOffset: scaledBorderOffset,
+        borderCapStyle,
+      })
+      staticBorderClipping.drawCanvasClipPath(ctx)
+      ctx.clip()
+      
       ctx.drawImage(borderImage, 0, 0, exportSize, exportSize)
       ctx.restore()
     } else if (borderWidth > 0) {

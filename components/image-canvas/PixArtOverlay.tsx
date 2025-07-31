@@ -1,4 +1,5 @@
 import React from "react"
+import { calculateClippingPath } from "@/lib/clippingUtils"
 
 interface PixArtOverlayProps {
   selectedPixArt: string | null
@@ -19,31 +20,16 @@ const PixArtOverlay: React.FC<PixArtOverlayProps> = ({
 }) => {
   if (!selectedPixArt) return null
 
-  // Calculate clipping styles to match the border EXACTLY
-  const getClippingStyle = () => {
-    const squareSize = containerSize - (2 * borderOffset) - borderWidth
-    const x = borderWidth / 2 + borderOffset
-    const y = borderWidth / 2 + borderOffset
-    
-    if (borderCapStyle === "rounded") {
-      const edgeRadius = containerSize / 2 - borderWidth / 2
-      const borderRadius = edgeRadius - borderOffset
-      const minRadius = borderWidth / 2
-      const clampedRadius = Math.max(minRadius, borderRadius)
-      return {
-        clipPath: `circle(${clampedRadius}px at ${containerSize / 2}px ${containerSize / 2}px)`,
-      }
-    } else if (borderCapStyle === "square") {
-      return {
-        clipPath: `inset(${y}px ${x}px ${y}px ${x}px)`,
-      }
-    } else if (borderCapStyle === "beveled") {
-      const cornerRadius = 10 // EXACT same as border
-      return {
-        clipPath: `inset(${y}px ${x}px ${y}px ${x}px round ${cornerRadius}px)`,
-      }
-    }
-    return {}
+  // Use shared clipping utility for consistent clipping between preview and export
+  const clippingResult = calculateClippingPath({
+    containerSize,
+    borderWidth,
+    borderOffset,
+    borderCapStyle,
+  })
+
+  const clippingStyle = {
+    clipPath: clippingResult.cssClipPath,
   }
 
   return (
@@ -53,7 +39,7 @@ const PixArtOverlay: React.FC<PixArtOverlayProps> = ({
         width: containerSize,
         height: containerSize,
         zIndex: 10, // Above image but below borders
-        ...getClippingStyle(),
+        ...clippingStyle,
       }}
     >
       <img
