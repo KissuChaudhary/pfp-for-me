@@ -157,17 +157,22 @@ export function useImageExport(props: UseImageExportProps) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
     
-    // Use the actual container size (384px) and export at same size for perfect match
-    const exportSize = containerSize
+    // Export at high resolution (2048x2048) while maintaining preview proportions
+    const exportSize = 2048
+    const resolutionScaleFactor = exportSize / containerSize
     canvas.width = exportSize
     canvas.height = exportSize
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     
-    // No scaling needed since we're using the same size
-    const scaledBorderWidth = borderWidth
-    const scaledBorderOffset = borderOffset
-    const scaledPositionX = position.x
-    const scaledPositionY = position.y
+    // Enable high-quality image smoothing for sharp results
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    
+    // Scale all drawing operations to maintain proportions
+    const scaledBorderWidth = borderWidth * resolutionScaleFactor
+    const scaledBorderOffset = borderOffset * resolutionScaleFactor
+    const scaledPositionX = position.x * resolutionScaleFactor
+    const scaledPositionY = position.y * resolutionScaleFactor
     
     // Create clipping path for the entire canvas based on border cap style
     ctx.save()
@@ -231,7 +236,7 @@ export function useImageExport(props: UseImageExportProps) {
               
               // Calculate pattern size to match browser background-size exactly
               const baseSize = 100 // Base size for image patterns
-              const scaledSize = Math.max(20, Math.min(200, baseSize * patternScale))
+              const scaledSize = Math.max(20, Math.min(200, baseSize * patternScale)) * resolutionScaleFactor
               
               // Create a pattern that repeats at the exact size the browser uses
               const pattern = ctx.createPattern(bgImage, "repeat")
@@ -255,14 +260,14 @@ export function useImageExport(props: UseImageExportProps) {
               
               // Calculate pattern size based on scale
               const baseSize = 20
-              const scaledSize = Math.max(5, Math.min(100, baseSize * patternScale))
+              const scaledSize = Math.max(5, Math.min(100, baseSize * patternScale)) * resolutionScaleFactor
               
               // Create a pattern that repeats
               const pattern = ctx.createPattern(bgImage, "repeat")
               if (pattern) {
                 // Scale the pattern
                 const matrix = new DOMMatrix()
-                matrix.scaleSelf(scaledSize / 20, scaledSize / 20) // 20 is the base SVG size
+                matrix.scaleSelf((scaledSize / 20) / resolutionScaleFactor, (scaledSize / 20) / resolutionScaleFactor) // 20 is the base SVG size, adjust for scale factor
                 pattern.setTransform(matrix)
                 ctx.fillStyle = pattern
                 ctx.fillRect(0, 0, exportSize, exportSize)
@@ -294,7 +299,7 @@ export function useImageExport(props: UseImageExportProps) {
           await new Promise((resolve) => (bgImage.onload = resolve))
           
           const baseSize = 100
-          const scaledSize = Math.max(20, Math.min(200, baseSize * patternScale))
+          const scaledSize = Math.max(20, Math.min(200, baseSize * patternScale)) * resolutionScaleFactor
           
           const pattern = ctx.createPattern(bgImage, "repeat")
           if (pattern) {
@@ -314,12 +319,12 @@ export function useImageExport(props: UseImageExportProps) {
           await new Promise((resolve) => (bgImage.onload = resolve))
           
           const baseSize = 20
-          const scaledSize = Math.max(5, Math.min(100, baseSize * patternScale))
+          const scaledSize = Math.max(5, Math.min(100, baseSize * patternScale)) * resolutionScaleFactor
           
           const pattern = ctx.createPattern(bgImage, "repeat")
           if (pattern) {
             const matrix = new DOMMatrix()
-            matrix.scaleSelf(scaledSize / 20, scaledSize / 20)
+            matrix.scaleSelf((scaledSize / 20) / resolutionScaleFactor, (scaledSize / 20) / resolutionScaleFactor)
             pattern.setTransform(matrix)
             ctx.fillStyle = pattern
             ctx.fillRect(0, 0, exportSize, exportSize)
@@ -525,8 +530,10 @@ export function useImageExport(props: UseImageExportProps) {
     if (showText && textContent.trim()) {
       ctx.save()
       
-      // Set text properties
-      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`
+      // Set text properties (scale font size for high resolution)
+      const scaledFontSize = fontSize * resolutionScaleFactor
+      const scaledLetterSpacing = letterSpacing * resolutionScaleFactor
+      ctx.font = `${fontWeight} ${scaledFontSize}px ${fontFamily}`
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
       ctx.globalAlpha = textOpacity / 100
@@ -547,14 +554,14 @@ export function useImageExport(props: UseImageExportProps) {
         const x = (exportSize * textPositionX) / 100
         const y = (exportSize * textPositionY) / 100
         
-        // Apply letter spacing
+        // Apply letter spacing (scaled)
         if (letterSpacing !== 0) {
           const chars = textContent.split('')
-          const totalSpacing = (chars.length - 1) * letterSpacing
+          const totalSpacing = (chars.length - 1) * scaledLetterSpacing
           const startX = x - totalSpacing / 2
           
           chars.forEach((char, index) => {
-            ctx.fillText(char, startX + (index * letterSpacing), y)
+            ctx.fillText(char, startX + (index * scaledLetterSpacing), y)
           })
         } else {
           ctx.fillText(textContent, x, y)
@@ -568,14 +575,14 @@ export function useImageExport(props: UseImageExportProps) {
         ctx.translate(x, y)
         ctx.rotate(Math.PI / 2) // 90 degrees
         
-        // Apply letter spacing
+        // Apply letter spacing (scaled)
         if (letterSpacing !== 0) {
           const chars = textContent.split('')
-          const totalSpacing = (chars.length - 1) * letterSpacing
+          const totalSpacing = (chars.length - 1) * scaledLetterSpacing
           const startY = -totalSpacing / 2
           
           chars.forEach((char, index) => {
-            ctx.fillText(char, 0, startY + (index * letterSpacing))
+            ctx.fillText(char, 0, startY + (index * scaledLetterSpacing))
           })
         } else {
           ctx.fillText(textContent, 0, 0)
@@ -598,8 +605,8 @@ export function useImageExport(props: UseImageExportProps) {
           tempCanvas.width = exportSize
           tempCanvas.height = exportSize
           
-          // Set text properties on temp canvas for measuring
-          tempCtx.font = `${fontWeight} ${fontSize}px ${fontFamily}`
+          // Set text properties on temp canvas for measuring (scaled font size)
+          tempCtx.font = `${fontWeight} ${scaledFontSize}px ${fontFamily}`
           
           // Calculate total text width
           const chars = textContent.split('')
@@ -663,13 +670,13 @@ export function useImageExport(props: UseImageExportProps) {
               .replace(/'/g, '&#39;')
             
             const fillColor = textColorType === "gradient" ? "url(#textGradient)" : textColor
-            const scaledFontSize = fontSize * scaleFactor
+            const scaledFontSizeForCurvedText = fontSize * resolutionScaleFactor * scaleFactor
             
             svgString += `
               <text 
                 x="${charX}" 
                 y="${charY}" 
-                font-size="${scaledFontSize}" 
+                font-size="${scaledFontSizeForCurvedText}" 
                 font-family="${fontFamily}" 
                 font-weight="${fontWeight}" 
                 text-anchor="middle" 
