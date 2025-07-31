@@ -428,7 +428,7 @@ export function useImageExport(props: UseImageExportProps) {
     
     // Draw border (after pix art and drip art front)
     if (borderMode === "static" && selectedStaticBorder) {
-      // Handle static border (image overlay)
+      // Handle static border (image overlay) with clipping based on border cap style
       const borderImage = new window.Image()
       borderImage.crossOrigin = "anonymous"
       borderImage.src = selectedStaticBorder
@@ -436,6 +436,28 @@ export function useImageExport(props: UseImageExportProps) {
       
       ctx.save()
       ctx.globalAlpha = borderOpacity / 100
+      
+      // Apply clipping path based on border cap style - same logic as main canvas clipping
+      ctx.beginPath()
+      
+      if (borderCapStyle === "rounded") {
+        ctx.arc(canvasCenter, canvasCenter, canvasRadius, 0, 2 * Math.PI)
+      } else if (borderCapStyle === "square") {
+        ctx.rect(0, 0, exportSize, exportSize)
+      } else if (borderCapStyle === "beveled") {
+        const bevel = 0.1 * exportSize
+        ctx.moveTo(bevel, 0)
+        ctx.lineTo(exportSize - bevel, 0)
+        ctx.lineTo(exportSize, bevel)
+        ctx.lineTo(exportSize, exportSize - bevel)
+        ctx.lineTo(exportSize - bevel, exportSize)
+        ctx.lineTo(bevel, exportSize)
+        ctx.lineTo(0, exportSize - bevel)
+        ctx.lineTo(0, bevel)
+        ctx.closePath()
+      }
+      ctx.clip()
+      
       ctx.drawImage(borderImage, 0, 0, exportSize, exportSize)
       ctx.restore()
     } else if (borderWidth > 0) {
