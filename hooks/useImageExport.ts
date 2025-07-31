@@ -328,7 +328,49 @@ export function useImageExport(props: UseImageExportProps) {
       }
     })()
     
-    // Draw Pix Art overlay (after image but before borders)
+    // Draw uploaded image with all transforms and filters (use full canvas center)
+    if (imageUrl) {
+      const img = new window.Image()
+      img.crossOrigin = "anonymous"
+      img.src = imageUrl
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = reject
+      })
+      
+      ctx.save()
+      ctx.filter = getFilterStyle()
+      
+      // Calculate image size exactly like the browser (objectFit: contain)
+      const imageNaturalWidth = img.naturalWidth
+      const imageNaturalHeight = img.naturalHeight
+      
+      // Calculate the scale to fit the image within the full canvas area (like objectFit: contain)
+      const scaleX = exportSize / imageNaturalWidth
+      const scaleY = exportSize / imageNaturalHeight
+      const scale = Math.min(scaleX, scaleY) // Use the smaller scale to fit within bounds
+      
+      // Calculate the base image dimensions (before zoom)
+      const baseDrawWidth = imageNaturalWidth * scale
+      const baseDrawHeight = imageNaturalHeight * scale
+      
+      // Apply zoom to get final dimensions
+      const finalDrawWidth = baseDrawWidth * zoom
+      const finalDrawHeight = baseDrawHeight * zoom
+      
+      // Position should be relative to the canvas center (like browser's flex centering)
+      const canvasCenterX = exportSize / 2
+      const canvasCenterY = exportSize / 2
+      
+      ctx.translate(canvasCenterX + scaledPositionX, canvasCenterY + scaledPositionY)
+      ctx.rotate((rotate * Math.PI) / 180)
+      ctx.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1)
+      ctx.drawImage(img, -finalDrawWidth / 2, -finalDrawHeight / 2, finalDrawWidth, finalDrawHeight)
+      ctx.restore()
+    }
+    ctx.restore()
+    
+    // Draw Pix Art overlay (after uploaded image but before borders)
     if (selectedPixArt) {
       const pixArtImage = new window.Image()
       pixArtImage.crossOrigin = "anonymous"
@@ -381,48 +423,6 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.drawImage(pixArtImage, offsetX, offsetY, scaledSize, scaledSize)
       ctx.restore()
     }
-    
-    // Draw uploaded image with all transforms and filters (use full canvas center)
-    if (imageUrl) {
-      const img = new window.Image()
-      img.crossOrigin = "anonymous"
-      img.src = imageUrl
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
-      })
-      
-      ctx.save()
-      ctx.filter = getFilterStyle()
-      
-      // Calculate image size exactly like the browser (objectFit: contain)
-      const imageNaturalWidth = img.naturalWidth
-      const imageNaturalHeight = img.naturalHeight
-      
-      // Calculate the scale to fit the image within the full canvas area (like objectFit: contain)
-      const scaleX = exportSize / imageNaturalWidth
-      const scaleY = exportSize / imageNaturalHeight
-      const scale = Math.min(scaleX, scaleY) // Use the smaller scale to fit within bounds
-      
-      // Calculate the base image dimensions (before zoom)
-      const baseDrawWidth = imageNaturalWidth * scale
-      const baseDrawHeight = imageNaturalHeight * scale
-      
-      // Apply zoom to get final dimensions
-      const finalDrawWidth = baseDrawWidth * zoom
-      const finalDrawHeight = baseDrawHeight * zoom
-      
-      // Position should be relative to the canvas center (like browser's flex centering)
-      const canvasCenterX = exportSize / 2
-      const canvasCenterY = exportSize / 2
-      
-      ctx.translate(canvasCenterX + scaledPositionX, canvasCenterY + scaledPositionY)
-      ctx.rotate((rotate * Math.PI) / 180)
-      ctx.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1)
-      ctx.drawImage(img, -finalDrawWidth / 2, -finalDrawHeight / 2, finalDrawWidth, finalDrawHeight)
-      ctx.restore()
-    }
-    ctx.restore()
     
     ctx.restore() // Restore the outer clipping path
     
