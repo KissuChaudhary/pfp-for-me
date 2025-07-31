@@ -170,15 +170,17 @@ export function useImageExport(props: UseImageExportProps) {
     } else if (borderCapStyle === "square") {
       ctx.rect(0, 0, exportSize, exportSize)
     } else if (borderCapStyle === "beveled") {
-      const bevel = 0.1 * exportSize
-      ctx.moveTo(bevel, 0)
-      ctx.lineTo(exportSize - bevel, 0)
-      ctx.lineTo(exportSize, bevel)
-      ctx.lineTo(exportSize, exportSize - bevel)
-      ctx.lineTo(exportSize - bevel, exportSize)
-      ctx.lineTo(bevel, exportSize)
-      ctx.lineTo(0, exportSize - bevel)
-      ctx.lineTo(0, bevel)
+      // Use rounded rectangle for beveled borders (same as BorderSVG component)
+      const cornerRadius = 10
+      ctx.moveTo(cornerRadius, 0)
+      ctx.lineTo(exportSize - cornerRadius, 0)
+      ctx.quadraticCurveTo(exportSize, 0, exportSize, cornerRadius)
+      ctx.lineTo(exportSize, exportSize - cornerRadius)
+      ctx.quadraticCurveTo(exportSize, exportSize, exportSize - cornerRadius, exportSize)
+      ctx.lineTo(cornerRadius, exportSize)
+      ctx.quadraticCurveTo(0, exportSize, 0, exportSize - cornerRadius)
+      ctx.lineTo(0, cornerRadius)
+      ctx.quadraticCurveTo(0, 0, cornerRadius, 0)
       ctx.closePath()
     }
     ctx.clip()
@@ -394,6 +396,14 @@ export function useImageExport(props: UseImageExportProps) {
       // Check if it's a full border (100%)
       const isFullBorder = borderAmount >= 99
       
+      // Apply rotation for square and beveled borders (same as BorderSVG component)
+      if (borderCapStyle === "square" || borderCapStyle === "beveled") {
+        ctx.save()
+        ctx.translate(center, center)
+        ctx.rotate(borderRotation * (Math.PI / 180))
+        ctx.translate(-center, -center)
+      }
+      
       if (borderCapStyle === "rounded") {
         // For partial borders, we need to draw an arc instead of a full circle
         if (isFullBorder) {
@@ -507,6 +517,11 @@ export function useImageExport(props: UseImageExportProps) {
             }
           }
         }
+      }
+      
+      // Restore rotation for square and beveled borders
+      if (borderCapStyle === "square" || borderCapStyle === "beveled") {
+        ctx.restore()
       }
       
       if (borderType === "gradient") {
