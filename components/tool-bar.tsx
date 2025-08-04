@@ -1,6 +1,6 @@
 "use client"
 
-import { Move, Crop, Settings, Square, Palette, History, Type, Sparkles } from "lucide-react"
+import { Move, Crop, Settings, Square, Palette, History, Sparkles } from "lucide-react"
 
 interface ToolBarProps {
   activePanel: string | null
@@ -15,7 +15,7 @@ const tools = [
   { id: "pix-art", icon: Sparkles, label: "Pix Art" },
   { id: "styles", icon: Palette, label: "Styles" },
   { id: "history", icon: History, label: "History" },
-  { id: "text", icon: Type, label: "Text" },
+ 
 ]
 
 export default function ToolBar({ activePanel, setActivePanel }: ToolBarProps) {

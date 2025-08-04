@@ -672,59 +672,7 @@ if (borderMode === "static" && selectedStaticBorder) {
   ctx.restore(); // Restore after drawing
 }
 
-    // Draw text
-    if (showText && textContent) {
-      ctx.save()
-      ctx.globalAlpha = textOpacity
-      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
-      ctx.letterSpacing = `${letterSpacing}px`
-      let fillStyle: CanvasGradient | string = textColor
-      if (textColorType === "gradient") {
-        let textGradient
-        if (textStyle === "vertical") {
-          textGradient = ctx.createLinearGradient(0, 0, 0, exportSize)
-        } else {
-          textGradient = ctx.createLinearGradient(0, 0, exportSize, 0)
-        }
-        textGradient.addColorStop(0, textGradientColors.start)
-        textGradient.addColorStop(1, textGradientColors.end)
-        fillStyle = textGradient
-      }
-      ctx.fillStyle = fillStyle
-      if (textStyle === "straight") {
-        ctx.fillText(textContent, exportSize / 2 + textPositionX, exportSize / 2 + textPositionY)
-      } else if (textStyle === "vertical") {
-        for (let i = 0; i < textContent.length; i++) {
-          ctx.fillText(
-            textContent[i],
-            exportSize / 2 + textPositionX,
-            exportSize / 2 + textPositionY + i * fontSize
-          )
-        }
-      } else if (textStyle === "curved") {
-        const radius = curveRadius || exportSize / 2.5
-        const start = ((startAngle || 0) * Math.PI) / 180
-        const dir = arcDirection === "counterclockwise" ? -1 : 1
-        const chars = textContent.split("")
-        const angleStep = (Math.PI * 2) / chars.length * dir
-        ctx.save()
-        ctx.translate(exportSize / 2 + textPositionX, exportSize / 2 + textPositionY)
-        ctx.rotate(start)
-        for (let i = 0; i < chars.length; i++) {
-          ctx.save()
-          ctx.rotate(i * angleStep)
-          ctx.translate(0, -radius)
-          ctx.rotate(-Math.PI / 2 * dir)
-          ctx.fillText(chars[i], 0, 0)
-          ctx.restore()
-        }
-        ctx.restore()
-      }
-      ctx.globalAlpha = 1
-      ctx.restore()
-    }
+
 
     // Download
     const dataUrl = canvas.toDataURL("image/png")

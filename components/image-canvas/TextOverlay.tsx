@@ -44,6 +44,8 @@ export default function TextOverlay({
 }: TextOverlayProps) {
   if (!showText || !textContent.trim()) return null
 
+
+
   const getTextStyle = () => {
     const baseStyle = {
       fontFamily: fontFamily,
@@ -55,6 +57,7 @@ export default function TextOverlay({
       zIndex: 25, // Above everything except borders (borders have zIndex: 20)
       userSelect: "none" as const,
       pointerEvents: "none" as const,
+
     }
 
     if (textColorType === "gradient") {

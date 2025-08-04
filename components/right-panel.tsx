@@ -6,7 +6,6 @@ import BorderPanel from "./panels/border-panel"
 import PixArtPanel from "./panels/pix-art-panel"
 import StylesPanel from "./panels/styles-panel"
 import PositionPanel from "./panels/position-panel"
-import TextPanel from "./panels/text-panel"
 
 interface RightPanelProps {
   activePanel: string | null
@@ -41,7 +40,7 @@ export default function RightPanel({
           {activePanel === "border" && <BorderPanel {...borderProps} />}
           {activePanel === "pix-art" && <PixArtPanel {...pixArtProps} />}
           {activePanel === "styles" && <StylesPanel />}
-          {activePanel === "text" && <TextPanel {...textProps} />}
+        
         </div>
       </div>
     </div>

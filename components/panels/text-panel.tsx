@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Minus, LoaderCircle, AlignLeft, Palette, Rainbow } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
