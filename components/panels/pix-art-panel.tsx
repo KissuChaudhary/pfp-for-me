@@ -1,6 +1,5 @@
 "use client"
 
-import { Palette } from "lucide-react"
 import { useState } from "react"
 
 interface PixArtPanelProps {
@@ -41,6 +40,18 @@ export default function PixArtPanel({
         <div className="space-y-3">
           {/* Pix Art Grid */}
           <div className="grid grid-cols-4 gap-2 overflow-y-auto">
+            {/* None Option */}
+            <button
+              onClick={() => setSelectedPixArt(null)}
+              className={`aspect-square border-2 border-black bg-white rounded-md transition-all flex items-center justify-center ${
+                selectedPixArt === null
+                  ? "border-blue-500 dark-shadow"
+                  : "hover:border-gray-400 light-shadow"
+              }`}
+            >
+              <span className="text-xs font-medium text-gray-700">None</span>
+            </button>
+            
             {displayedPixArt.map((pixArt) => (
               <button
                 key={pixArt.id}

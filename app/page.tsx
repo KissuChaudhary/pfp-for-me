@@ -33,7 +33,7 @@ export default function ProfilePictureEditor() {
 
   // Background controls state
   const [backgroundType, setBackgroundType] = useState<"solid" | "gradient" | "pattern" | "image">("solid")
-  const [backgroundColor, setBackgroundColor] = useState("#5B9BD5")
+  const [backgroundColor, setBackgroundColor] = useState("#e8e8e8")
   const [gradientColors, setGradientColors] = useState({ start: "#4ECDC4", end: "#45B7D1" })
   const [gradientDirection, setGradientDirection] = useState("to right")
   const [backgroundPattern, setBackgroundPattern] = useState<Pattern | null>(null)
@@ -56,8 +56,8 @@ export default function ProfilePictureEditor() {
   const [sepia, setSepia] = useState(0)
 
   // Border controls state
-  const [borderWidth, setBorderWidth] = useState(10)
-  const [borderColor, setBorderColor] = useState("#FF6B6B")
+  const [borderWidth, setBorderWidth] = useState(5)
+  const [borderColor, setBorderColor] = useState("#000000")
   const [borderOpacity, setBorderOpacity] = useState(100)
   const [borderType, setBorderType] = useState<"solid" | "gradient">("solid")
   const [borderGradientColors, setBorderGradientColors] = useState({ start: "#FFD700", end: "#FFA500" })
