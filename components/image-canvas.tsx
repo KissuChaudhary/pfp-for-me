@@ -260,6 +260,7 @@ const ImageCanvas = forwardRef(function ImageCanvas(
     arcDirection,
     exportCanvasRef,
     containerSize, // Pass the container size
+    exportQuality: 4, // 4x quality multiplier for high-resolution exports
   })
 
   // Expose methods to parent component via ref

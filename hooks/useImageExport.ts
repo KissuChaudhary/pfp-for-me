@@ -59,6 +59,7 @@ interface UseImageExportProps {
   arcDirection: "clockwise" | "counterclockwise"
   exportCanvasRef: React.RefObject<HTMLCanvasElement | null>
   containerSize?: number
+  exportQuality?: number // New prop for export quality multiplier
 }
 
 export function useImageExport(props: UseImageExportProps) {
@@ -119,7 +120,8 @@ export function useImageExport(props: UseImageExportProps) {
     startAngle,
     arcDirection,
     exportCanvasRef,
-    containerSize = 384
+    containerSize = 384,
+    exportQuality = 4 // Default 4x quality multiplier (e.g., 320px -> 1280px)
   } = props
 
   const getFilterStyle = () => {
@@ -149,11 +151,21 @@ export function useImageExport(props: UseImageExportProps) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const exportSize = containerSize
+    // Calculate high-resolution export size
+    const baseExportSize = containerSize
+    const exportSize = baseExportSize * exportQuality
+    const scaleFactor = exportQuality // Scale factor for all coordinates and sizes
+
+    // Set canvas to high resolution
     canvas.width = exportSize
     canvas.height = exportSize
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // Scale the context to maintain the same visual appearance
+    ctx.scale(scaleFactor, scaleFactor)
+    
+    ctx.clearRect(0, 0, baseExportSize, baseExportSize)
 
+    // Scale all measurements to match the base size
     const scaledBorderWidth = borderWidth
     const scaledBorderOffset = borderOffset
     const scaledPositionX = position.x
@@ -162,23 +174,23 @@ export function useImageExport(props: UseImageExportProps) {
     // Create clipping path for the entire canvas based on border cap style
     ctx.save()
     ctx.beginPath()
-    const canvasCenter = exportSize / 2
-    const canvasRadius = exportSize / 2
+    const canvasCenter = baseExportSize / 2
+    const canvasRadius = baseExportSize / 2
 
     if (borderCapStyle === "rounded") {
       ctx.arc(canvasCenter, canvasCenter, canvasRadius, 0, 2 * Math.PI)
     } else if (borderCapStyle === "square") {
-      ctx.rect(0, 0, exportSize, exportSize)
+      ctx.rect(0, 0, baseExportSize, baseExportSize)
     } else if (borderCapStyle === "beveled") {
       // Use rounded rectangle for beveled borders (same as BorderSVG component)
       const cornerRadius = 10
       ctx.moveTo(cornerRadius, 0)
-      ctx.lineTo(exportSize - cornerRadius, 0)
-      ctx.quadraticCurveTo(exportSize, 0, exportSize, cornerRadius)
-      ctx.lineTo(exportSize, exportSize - cornerRadius)
-      ctx.quadraticCurveTo(exportSize, exportSize, exportSize - cornerRadius, exportSize)
-      ctx.lineTo(cornerRadius, exportSize)
-      ctx.quadraticCurveTo(0, exportSize, 0, exportSize - cornerRadius)
+      ctx.lineTo(baseExportSize - cornerRadius, 0)
+      ctx.quadraticCurveTo(baseExportSize, 0, baseExportSize, cornerRadius)
+      ctx.lineTo(baseExportSize, baseExportSize - cornerRadius)
+      ctx.quadraticCurveTo(baseExportSize, baseExportSize, baseExportSize - cornerRadius, baseExportSize)
+      ctx.lineTo(cornerRadius, baseExportSize)
+      ctx.quadraticCurveTo(0, baseExportSize, 0, baseExportSize - cornerRadius)
       ctx.lineTo(0, cornerRadius)
       ctx.quadraticCurveTo(0, 0, cornerRadius, 0)
       ctx.closePath()
@@ -189,25 +201,25 @@ export function useImageExport(props: UseImageExportProps) {
     switch (backgroundType) {
       case "solid":
         ctx.fillStyle = backgroundColor
-        ctx.fillRect(0, 0, exportSize, exportSize)
+        ctx.fillRect(0, 0, baseExportSize, baseExportSize)
         break
       case "gradient": {
         let bgGradient
         if (gradientDirection === "to right") {
-          bgGradient = ctx.createLinearGradient(0, 0, exportSize, 0)
+          bgGradient = ctx.createLinearGradient(0, 0, baseExportSize, 0)
         } else if (gradientDirection === "to bottom") {
-          bgGradient = ctx.createLinearGradient(0, 0, 0, exportSize)
+          bgGradient = ctx.createLinearGradient(0, 0, 0, baseExportSize)
         } else if (gradientDirection === "to top right") {
-          bgGradient = ctx.createLinearGradient(0, exportSize, exportSize, 0)
+          bgGradient = ctx.createLinearGradient(0, baseExportSize, baseExportSize, 0)
         } else if (gradientDirection === "to bottom left") {
-          bgGradient = ctx.createLinearGradient(exportSize, 0, 0, exportSize)
+          bgGradient = ctx.createLinearGradient(baseExportSize, 0, 0, baseExportSize)
         } else {
-          bgGradient = ctx.createLinearGradient(0, 0, exportSize, exportSize)
+          bgGradient = ctx.createLinearGradient(0, 0, baseExportSize, baseExportSize)
         }
         bgGradient.addColorStop(0, gradientColors.start)
         bgGradient.addColorStop(1, gradientColors.end)
         ctx.fillStyle = bgGradient
-        ctx.fillRect(0, 0, exportSize, exportSize)
+        ctx.fillRect(0, 0, baseExportSize, baseExportSize)
         break
       }
       case "pattern": {
@@ -225,7 +237,7 @@ export function useImageExport(props: UseImageExportProps) {
               matrix.scaleSelf(scaledSize / bgImage.naturalWidth, scaledSize / bgImage.naturalHeight)
               pattern.setTransform(matrix)
               ctx.fillStyle = pattern
-              ctx.fillRect(0, 0, exportSize, exportSize)
+              ctx.fillRect(0, 0, baseExportSize, baseExportSize)
             }
           } else {
             const coloredPatternUrl = getColoredPattern(backgroundPattern, backgroundPattern.color)
@@ -241,7 +253,7 @@ export function useImageExport(props: UseImageExportProps) {
               matrix.scaleSelf(scaledSize / 20, scaledSize / 20)
               pattern.setTransform(matrix)
               ctx.fillStyle = pattern
-              ctx.fillRect(0, 0, exportSize, exportSize)
+              ctx.fillRect(0, 0, baseExportSize, baseExportSize)
             }
           }
         }
@@ -254,7 +266,7 @@ export function useImageExport(props: UseImageExportProps) {
           bgImage.crossOrigin = "anonymous"
           bgImage.src = bgSrc
           await new Promise((resolve) => (bgImage.onload = resolve))
-          ctx.drawImage(bgImage, 0, 0, exportSize, exportSize)
+          ctx.drawImage(bgImage, 0, 0, baseExportSize, baseExportSize)
         }
         break
       }
@@ -275,7 +287,7 @@ export function useImageExport(props: UseImageExportProps) {
           matrix.scaleSelf(scaledSize / bgImage.naturalWidth, scaledSize / bgImage.naturalHeight)
           pattern.setTransform(matrix)
           ctx.fillStyle = pattern
-          ctx.fillRect(0, 0, exportSize, exportSize)
+          ctx.fillRect(0, 0, baseExportSize, baseExportSize)
         }
       } else {
         const coloredPatternUrl = getColoredPattern(backgroundPattern, backgroundPattern.color)
@@ -291,7 +303,7 @@ export function useImageExport(props: UseImageExportProps) {
           matrix.scaleSelf(scaledSize / 20, scaledSize / 20)
           pattern.setTransform(matrix)
           ctx.fillStyle = pattern
-          ctx.fillRect(0, 0, exportSize, exportSize)
+          ctx.fillRect(0, 0, baseExportSize, baseExportSize)
         }
       }
     }
@@ -309,15 +321,15 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.filter = getFilterStyle()
       const imageNaturalWidth = img.naturalWidth
       const imageNaturalHeight = img.naturalHeight
-      const scaleX = exportSize / imageNaturalWidth
-      const scaleY = exportSize / imageNaturalHeight
+      const scaleX = baseExportSize / imageNaturalWidth
+      const scaleY = baseExportSize / imageNaturalHeight
       const scale = Math.min(scaleX, scaleY)
       const baseDrawWidth = imageNaturalWidth * scale
       const baseDrawHeight = imageNaturalHeight * scale
       const finalDrawWidth = baseDrawWidth * zoom
       const finalDrawHeight = baseDrawHeight * zoom
-      const canvasCenterX = exportSize / 2
-      const canvasCenterY = exportSize / 2
+      const canvasCenterX = baseExportSize / 2
+      const canvasCenterY = baseExportSize / 2
       ctx.translate(canvasCenterX + scaledPositionX, canvasCenterY + scaledPositionY)
       ctx.rotate((rotate * Math.PI) / 180)
       ctx.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1)
@@ -334,20 +346,20 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.save()
       ctx.beginPath()
       if (borderCapStyle === "rounded") {
-        const borderCenter = exportSize / 2
-        const edgeRadius = exportSize / 2 - scaledBorderWidth / 2
+        const borderCenter = baseExportSize / 2
+        const edgeRadius = baseExportSize / 2 - scaledBorderWidth / 2
         const borderRadius = edgeRadius - scaledBorderOffset
         const minRadius = scaledBorderWidth / 2
         const clampedRadius = Math.max(minRadius, borderRadius)
         ctx.arc(borderCenter, borderCenter, clampedRadius, 0, 2 * Math.PI)
       } else if (borderCapStyle === "square") {
-        const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
+        const squareSize = baseExportSize - (2 * scaledBorderOffset) - scaledBorderWidth
         const x = scaledBorderWidth / 2 + scaledBorderOffset
         const y = scaledBorderWidth / 2 + scaledBorderOffset
         ctx.rect(x, y, squareSize, squareSize)
       } else if (borderCapStyle === "beveled") {
         // For beveled borders, position at the edge of the canvas (no borderOffset) - same as border drawing
-        const squareSize = exportSize - scaledBorderWidth
+        const squareSize = baseExportSize - scaledBorderWidth
         const x = scaledBorderWidth / 2
         const y = scaledBorderWidth / 2
         const cornerRadius = 10
@@ -363,9 +375,9 @@ export function useImageExport(props: UseImageExportProps) {
         ctx.closePath()
       }
       ctx.clip()
-      const scaledSize = exportSize * (pixArtSize / 100)
-      const offsetX = (exportSize - scaledSize) / 2
-      const offsetY = (exportSize - scaledSize) / 2
+      const scaledSize = baseExportSize * (pixArtSize / 100)
+      const offsetX = (baseExportSize - scaledSize) / 2
+      const offsetY = (baseExportSize - scaledSize) / 2
       ctx.drawImage(pixArtImage, offsetX, offsetY, scaledSize, scaledSize)
       ctx.restore()
     }
@@ -377,10 +389,10 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.save()
       ctx.beginPath()
       const halfBorder = borderWidth / 2
-      const center = exportSize / 2
+      const center = baseExportSize / 2
       
       // Calculate border radius based on offset (same logic as useBorderProps)
-      const edgeRadius = exportSize / 2 - borderWidth / 2
+      const edgeRadius = baseExportSize / 2 - borderWidth / 2
       const borderRadius = edgeRadius - borderOffset
       const minRadius = borderWidth / 2
       const clampedRadius = Math.max(minRadius, borderRadius)
@@ -390,7 +402,7 @@ export function useImageExport(props: UseImageExportProps) {
       const arcLength = circleCircumference * (borderAmount / 100)
       
       // For square borders, calculate based on the adjusted size
-      const squareSize = exportSize - (2 * borderOffset) - borderWidth
+      const squareSize = baseExportSize - (2 * borderOffset) - borderWidth
       const squarePerimeter = 4 * squareSize
       const squareArc = squarePerimeter * (borderAmount / 100)
       
@@ -418,7 +430,7 @@ export function useImageExport(props: UseImageExportProps) {
           ctx.arc(center, center, clampedRadius, startAngle, endAngle)
         }
       } else if (borderCapStyle === "square") {
-        const size = exportSize - borderWidth - borderOffset * 2
+        const size = baseExportSize - borderWidth - borderOffset * 2
         const x = borderWidth / 2 + borderOffset
         const y = borderWidth / 2 + borderOffset
         
@@ -480,7 +492,7 @@ export function useImageExport(props: UseImageExportProps) {
         }
       } else if (borderCapStyle === "beveled") {
         // For beveled borders, use the same positioning as BorderSVG component
-        const size = exportSize - borderWidth - borderOffset * 2
+        const size = baseExportSize - borderWidth - borderOffset * 2
         const x = borderWidth / 2 + borderOffset
         const y = borderWidth / 2 + borderOffset
         const cornerRadius = 10
@@ -602,16 +614,16 @@ export function useImageExport(props: UseImageExportProps) {
              if (borderType === "gradient") {
          let borderGradient
          if (borderGradientDirection === "to right") {
-           borderGradient = ctx.createLinearGradient(0, 0, exportSize, 0)
+           borderGradient = ctx.createLinearGradient(0, 0, baseExportSize, 0)
          } else if (borderGradientDirection === "to bottom") {
-           borderGradient = ctx.createLinearGradient(0, 0, 0, exportSize)
+           borderGradient = ctx.createLinearGradient(0, 0, 0, baseExportSize)
          } else if (borderGradientDirection === "45deg") {
-           borderGradient = ctx.createLinearGradient(0, exportSize, exportSize, 0)
+           borderGradient = ctx.createLinearGradient(0, baseExportSize, baseExportSize, 0)
          } else if (borderGradientDirection === "circle") {
-           borderGradient = ctx.createRadialGradient(exportSize/2, exportSize/2, 0, exportSize/2, exportSize/2, exportSize/2)
+           borderGradient = ctx.createRadialGradient(baseExportSize/2, baseExportSize/2, 0, baseExportSize/2, baseExportSize/2, baseExportSize/2)
          } else {
            // Default diagonal gradient
-           borderGradient = ctx.createLinearGradient(0, 0, exportSize, exportSize)
+           borderGradient = ctx.createLinearGradient(0, 0, baseExportSize, baseExportSize)
          }
          borderGradient.addColorStop(0, borderGradientColors.start)
          borderGradient.addColorStop(1, borderGradientColors.end)
@@ -650,25 +662,25 @@ if (borderMode === "static" && selectedStaticBorder) {
   ctx.beginPath();
   if (borderCapStyle === "rounded") {
     // Circle
-    ctx.arc(exportSize / 2, exportSize / 2, exportSize / 2, 0, Math.PI * 2);
+    ctx.arc(baseExportSize / 2, baseExportSize / 2, baseExportSize / 2, 0, Math.PI * 2);
   } else if (borderCapStyle === "square") {
     // Square
-    ctx.rect(0, 0, exportSize, exportSize);
+    ctx.rect(0, 0, baseExportSize, baseExportSize);
   } else if (borderCapStyle === "beveled") {
     // Beveled (same logic as before)
-    const bevel = 0.1 * exportSize;
+    const bevel = 0.1 * baseExportSize;
     ctx.moveTo(bevel, 0);
-    ctx.lineTo(exportSize - bevel, 0);
-    ctx.lineTo(exportSize, bevel);
-    ctx.lineTo(exportSize, exportSize - bevel);
-    ctx.lineTo(exportSize - bevel, exportSize);
-    ctx.lineTo(bevel, exportSize);
-    ctx.lineTo(0, exportSize - bevel);
+    ctx.lineTo(baseExportSize - bevel, 0);
+    ctx.lineTo(baseExportSize, bevel);
+    ctx.lineTo(baseExportSize, baseExportSize - bevel);
+    ctx.lineTo(baseExportSize - bevel, baseExportSize);
+    ctx.lineTo(bevel, baseExportSize);
+    ctx.lineTo(0, baseExportSize - bevel);
     ctx.lineTo(0, bevel);
     ctx.closePath();
   }
   ctx.clip();
-  ctx.drawImage(borderImg, 0, 0, exportSize, exportSize);
+  ctx.drawImage(borderImg, 0, 0, baseExportSize, baseExportSize);
   ctx.restore(); // Restore after drawing
 }
 
@@ -739,7 +751,8 @@ if (borderMode === "static" && selectedStaticBorder) {
     startAngle,
     arcDirection,
     exportCanvasRef,
-    containerSize
+    containerSize,
+    exportQuality
   ])
 
   return { exportImage }

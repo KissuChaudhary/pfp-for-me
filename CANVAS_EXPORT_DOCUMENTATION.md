@@ -9,9 +9,10 @@ This document covers all the fixes and implementations for the profile picture e
 1. [Border System](#border-system)
 2. [Responsive Canvas](#responsive-canvas)
 3. [Export System](#export-system)
-4. [Image Positioning](#image-positioning)
-5. [Common Issues & Solutions](#common-issues--solutions)
-6. [Key Files & Components](#key-files--components)
+4. [High-Quality Export](#high-quality-export)
+5. [Image Positioning](#image-positioning)
+6. [Common Issues & Solutions](#common-issues--solutions)
+7. [Key Files & Components](#key-files--components)
 
 ---
 
@@ -88,6 +89,61 @@ const exportSize = containerSize // Match preview size exactly
 const contentSize = containerSize - 2 * borderOffset - 2 * borderWidth
 const contentX = (exportSize - contentSize) / 2
 const contentY = (exportSize - contentSize) / 2
+```
+
+---
+
+## High-Quality Export
+
+### Overview
+The export system now supports high-resolution exports while maintaining the same visual appearance as the preview. This is achieved by using a high-resolution canvas for export while keeping the preview at the original size.
+
+### Implementation Details
+- **Preview**: Maintains original size (320px mobile, 384px desktop)
+- **Export**: Uses quality multiplier (default 4x) for high-resolution output
+- **Example**: 320px preview → 1280px export (4x quality)
+
+### Quality Multiplier
+```typescript
+// Default export quality (4x multiplier)
+exportQuality: 4
+
+// Examples:
+// Mobile (320px) → 1280px export
+// Desktop (384px) → 1536px export
+```
+
+### Technical Implementation
+```typescript
+// Calculate high-resolution export size
+const baseExportSize = containerSize
+const exportSize = baseExportSize * exportQuality
+const scaleFactor = exportQuality
+
+// Set canvas to high resolution
+canvas.width = exportSize
+canvas.height = exportSize
+
+// Scale the context to maintain visual appearance
+ctx.scale(scaleFactor, scaleFactor)
+
+// All drawing operations use baseExportSize coordinates
+ctx.clearRect(0, 0, baseExportSize, baseExportSize)
+```
+
+### Benefits
+- **High Quality**: Exports are 4x higher resolution than preview
+- **Perfect Match**: Export appearance matches preview exactly
+- **Performance**: Preview remains fast and responsive
+- **Scalability**: Quality multiplier can be adjusted as needed
+
+### Usage
+```typescript
+const { exportImage } = useImageExport({
+  // ... other props
+  containerSize, // Preview size (e.g., 320px)
+  exportQuality: 4, // Export quality multiplier
+})
 ```
 
 ---
@@ -183,6 +239,16 @@ const canvasCenterX = exportSize / 2
 const canvasCenterY = exportSize / 2
 ```
 
+### Issue: Low Quality Exports
+**Cause**: Export using same resolution as preview
+**Solution**: Use high-quality export with quality multiplier
+```typescript
+const { exportImage } = useImageExport({
+  // ... other props
+  exportQuality: 4, // 4x quality multiplier
+})
+```
+
 ---
 
 ## Key Files & Components
@@ -213,6 +279,7 @@ interface UseBorderProps {
 
 interface UseImageExportProps {
   containerSize?: number // Export sizing
+  exportQuality?: number // Export quality multiplier
   // ... other props
 }
 ```
@@ -242,7 +309,12 @@ interface UseImageExportProps {
 - Clipping: Use Border Cap Style on full canvas
 - Border: Use same calculations as preview
 
-### 5. Responsive Design
+### 5. High-Quality Export
+- Use quality multiplier for high-resolution exports
+- Maintain visual consistency between preview and export
+- Scale context appropriately for high-resolution canvas
+
+### 6. Responsive Design
 - Calculate mobile size dynamically
 - Update on window resize
 - Maintain aspect ratios
@@ -271,40 +343,50 @@ interface UseImageExportProps {
 - [ ] Export size matches preview
 - [ ] Border position matches preview
 - [ ] Image position matches preview
-- [ ] Background fills correct area
-- [ ] No unwanted borders/colors
-- [ ] Border cap style clipping works
+- [ ] High-quality export produces sharp images
+- [ ] Export quality multiplier works correctly
 
-### Image Behavior
-- [ ] Image extends beyond border
-- [ ] Image clipped by Border Cap Style
-- [ ] Image positioning works
-- [ ] Image scaling works
-- [ ] Image zoom works
-- [ ] Image rotation works
+### High-Quality Export
+- [ ] Export resolution is 4x higher than preview
+- [ ] Visual appearance matches preview exactly
+- [ ] No quality loss in exported images
+- [ ] Export performance is acceptable
+- [ ] Quality multiplier can be adjusted
 
 ---
 
-## Future Considerations
+## Performance Considerations
 
-### Performance Optimizations
-- Consider using `useMemo` for expensive calculations
-- Implement image caching for repeated exports
-- Optimize canvas rendering for large images
+### Preview Performance
+- Keep preview canvas at original size for performance
+- Use CSS transforms for smooth interactions
+- Minimize re-renders during editing
 
-### Feature Additions
-- Support for different export formats (JPEG, WebP)
-- Export quality settings
-- Batch export functionality
-- Custom export dimensions
+### Export Performance
+- High-resolution exports may take longer to process
+- Consider showing loading indicator during export
+- Optimize image loading for high-resolution canvas
 
-### Maintenance
-- Keep border calculations synchronized
-- Test responsive behavior on new devices
-- Monitor export performance with large images
-- Update documentation when adding new features
+### Memory Usage
+- High-resolution canvas uses more memory
+- Clean up canvas after export
+- Consider garbage collection for large images
 
 ---
 
-*Last Updated: [Current Date]*
-*Version: 1.0* 
+## Future Enhancements
+
+### Quality Options
+- Allow users to choose export quality (2x, 4x, 8x)
+- Add quality presets (web, print, high-res)
+- Implement progressive quality loading
+
+### Format Options
+- Support multiple export formats (PNG, JPEG, WebP)
+- Add format-specific quality settings
+- Implement format optimization
+
+### Batch Export
+- Export multiple sizes simultaneously
+- Generate different aspect ratios
+- Create export presets for different platforms 
