@@ -16,6 +16,7 @@ interface RightPanelProps {
   borderProps: any
   pixArtProps: any
   textProps: any
+  exportProps?: any
 }
 
 export default function RightPanel({
@@ -27,6 +28,7 @@ export default function RightPanel({
   borderProps,
   pixArtProps,
   textProps,
+  exportProps,
 }: RightPanelProps) {
   if (!activePanel) return null
 
@@ -39,7 +41,7 @@ export default function RightPanel({
           {activePanel === "background" && <BackgroundPanel {...backgroundProps} />}
           {activePanel === "border" && <BorderPanel {...borderProps} />}
           {activePanel === "pix-art" && <PixArtPanel {...pixArtProps} />}
-          {activePanel === "styles" && <StylesPanel />}
+          {activePanel === "styles" && <StylesPanel exportProps={exportProps} />}
         
         </div>
       </div>

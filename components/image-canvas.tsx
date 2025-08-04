@@ -34,6 +34,7 @@ interface ImageCanvasProps {
   gridSnap: boolean
   gridSize: number
   containerSize?: number // Add containerSize prop for responsive sizing
+  exportMultiplier: number // Add export multiplier prop
   // Background props
   backgroundType: "solid" | "gradient" | "pattern" | "image"
   backgroundColor: string
@@ -119,6 +120,7 @@ const ImageCanvas = forwardRef(function ImageCanvas(
     gridSnap,
     gridSize,
     containerSize = 384, // Default to 384 for desktop
+    exportMultiplier,
     // Background props
     backgroundType,
     backgroundColor,
@@ -260,6 +262,7 @@ const ImageCanvas = forwardRef(function ImageCanvas(
     arcDirection,
     exportCanvasRef,
     containerSize, // Pass the container size
+    exportMultiplier, // Pass the export multiplier
   })
 
   // Expose methods to parent component via ref

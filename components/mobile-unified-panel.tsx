@@ -18,6 +18,7 @@ interface MobileUnifiedPanelProps {
   borderProps: any
   pixArtProps: any
   textProps: any
+  exportProps?: any
 }
 
 const tools = [
@@ -40,6 +41,7 @@ export default function MobileUnifiedPanel({
   borderProps,
   pixArtProps,
   textProps,
+  exportProps,
 }: MobileUnifiedPanelProps) {
   return (
     <div className="h-full border-2 border-black rounded-t-xl shadow-[0_-2px_0_rgba(0,0,0,1)] bg-white flex flex-col px-2">
@@ -67,7 +69,7 @@ export default function MobileUnifiedPanel({
         {activePanel === "background" && <BackgroundPanel {...backgroundProps} />}
         {activePanel === "border" && <BorderPanel {...borderProps} />}
         {activePanel === "pix-art" && <PixArtPanel {...pixArtProps} />}
-        {activePanel === "styles" && <StylesPanel />}
+        {activePanel === "styles" && <StylesPanel exportProps={exportProps} />}
         {activePanel === "history" && (
           <div className="p-3">
             <h3 className="font-bold text-sm mb-1">History</h3>

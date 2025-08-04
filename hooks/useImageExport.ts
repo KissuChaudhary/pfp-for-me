@@ -59,6 +59,7 @@ interface UseImageExportProps {
   arcDirection: "clockwise" | "counterclockwise"
   exportCanvasRef: React.RefObject<HTMLCanvasElement | null>
   containerSize?: number
+  exportMultiplier?: number // Add export multiplier parameter
 }
 
 export function useImageExport(props: UseImageExportProps) {
@@ -119,7 +120,8 @@ export function useImageExport(props: UseImageExportProps) {
     startAngle,
     arcDirection,
     exportCanvasRef,
-    containerSize = 384
+    containerSize = 384,
+    exportMultiplier = 4 // Default to 4x export resolution
   } = props
 
   const getFilterStyle = () => {
@@ -149,15 +151,20 @@ export function useImageExport(props: UseImageExportProps) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const exportSize = containerSize
+    // Use high-resolution canvas for export
+    const previewSize = containerSize
+    const exportSize = previewSize * exportMultiplier
+    const scaleFactor = exportMultiplier
+    
     canvas.width = exportSize
     canvas.height = exportSize
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    const scaledBorderWidth = borderWidth
-    const scaledBorderOffset = borderOffset
-    const scaledPositionX = position.x
-    const scaledPositionY = position.y
+    // Scale all measurements by the export multiplier
+    const scaledBorderWidth = borderWidth * scaleFactor
+    const scaledBorderOffset = borderOffset * scaleFactor
+    const scaledPositionX = position.x * scaleFactor
+    const scaledPositionY = position.y * scaleFactor
 
     // Create clipping path for the entire canvas based on border cap style
     ctx.save()
@@ -217,8 +224,8 @@ export function useImageExport(props: UseImageExportProps) {
             bgImage.crossOrigin = "anonymous"
             bgImage.src = backgroundPattern.imageUrl!
             await new Promise((resolve) => (bgImage.onload = resolve))
-            const baseSize = 100
-            const scaledSize = Math.max(20, Math.min(200, baseSize * patternScale))
+            const baseSize = 100 * scaleFactor // Scale pattern size
+            const scaledSize = Math.max(20 * scaleFactor, Math.min(200 * scaleFactor, baseSize * patternScale))
             const pattern = ctx.createPattern(bgImage, "repeat")
             if (pattern) {
               const matrix = new DOMMatrix()
@@ -233,8 +240,8 @@ export function useImageExport(props: UseImageExportProps) {
             bgImage.crossOrigin = "anonymous"
             bgImage.src = coloredPatternUrl
             await new Promise((resolve) => (bgImage.onload = resolve))
-            const baseSize = 20
-            const scaledSize = Math.max(5, Math.min(100, baseSize * patternScale))
+            const baseSize = 20 * scaleFactor // Scale pattern size
+            const scaledSize = Math.max(5 * scaleFactor, Math.min(100 * scaleFactor, baseSize * patternScale))
             const pattern = ctx.createPattern(bgImage, "repeat")
             if (pattern) {
               const matrix = new DOMMatrix()
@@ -267,8 +274,8 @@ export function useImageExport(props: UseImageExportProps) {
         bgImage.crossOrigin = "anonymous"
         bgImage.src = backgroundPattern.imageUrl!
         await new Promise((resolve) => (bgImage.onload = resolve))
-        const baseSize = 100
-        const scaledSize = Math.max(20, Math.min(200, baseSize * patternScale))
+        const baseSize = 100 * scaleFactor // Scale pattern size
+        const scaledSize = Math.max(20 * scaleFactor, Math.min(200 * scaleFactor, baseSize * patternScale))
         const pattern = ctx.createPattern(bgImage, "repeat")
         if (pattern) {
           const matrix = new DOMMatrix()
@@ -283,8 +290,8 @@ export function useImageExport(props: UseImageExportProps) {
         bgImage.crossOrigin = "anonymous"
         bgImage.src = coloredPatternUrl
         await new Promise((resolve) => (bgImage.onload = resolve))
-        const baseSize = 20
-        const scaledSize = Math.max(5, Math.min(100, baseSize * patternScale))
+        const baseSize = 20 * scaleFactor // Scale pattern size
+        const scaledSize = Math.max(5 * scaleFactor, Math.min(100 * scaleFactor, baseSize * patternScale))
         const pattern = ctx.createPattern(bgImage, "repeat")
         if (pattern) {
           const matrix = new DOMMatrix()
@@ -309,6 +316,7 @@ export function useImageExport(props: UseImageExportProps) {
       ctx.filter = getFilterStyle()
       const imageNaturalWidth = img.naturalWidth
       const imageNaturalHeight = img.naturalHeight
+      // Use export size for scaling calculations to maintain image proportions
       const scaleX = exportSize / imageNaturalWidth
       const scaleY = exportSize / imageNaturalHeight
       const scale = Math.min(scaleX, scaleY)
@@ -350,7 +358,7 @@ export function useImageExport(props: UseImageExportProps) {
         const squareSize = exportSize - scaledBorderWidth
         const x = scaledBorderWidth / 2
         const y = scaledBorderWidth / 2
-        const cornerRadius = 10
+        const cornerRadius = 10 * scaleFactor // Scale corner radius
         ctx.moveTo(x + cornerRadius, y)
         ctx.lineTo(x + squareSize - cornerRadius, y)
         ctx.quadraticCurveTo(x + squareSize, y, x + squareSize, y + cornerRadius)
@@ -376,13 +384,13 @@ export function useImageExport(props: UseImageExportProps) {
     if (borderWidth > 0) {
       ctx.save()
       ctx.beginPath()
-      const halfBorder = borderWidth / 2
+      const halfBorder = scaledBorderWidth / 2
       const center = exportSize / 2
       
       // Calculate border radius based on offset (same logic as useBorderProps)
-      const edgeRadius = exportSize / 2 - borderWidth / 2
-      const borderRadius = edgeRadius - borderOffset
-      const minRadius = borderWidth / 2
+      const edgeRadius = exportSize / 2 - scaledBorderWidth / 2
+      const borderRadius = edgeRadius - scaledBorderOffset
+      const minRadius = scaledBorderWidth / 2
       const clampedRadius = Math.max(minRadius, borderRadius)
       
       // Calculate arc length for border amount
@@ -390,7 +398,7 @@ export function useImageExport(props: UseImageExportProps) {
       const arcLength = circleCircumference * (borderAmount / 100)
       
       // For square borders, calculate based on the adjusted size
-      const squareSize = exportSize - (2 * borderOffset) - borderWidth
+      const squareSize = exportSize - (2 * scaledBorderOffset) - scaledBorderWidth
       const squarePerimeter = 4 * squareSize
       const squareArc = squarePerimeter * (borderAmount / 100)
       
@@ -418,9 +426,9 @@ export function useImageExport(props: UseImageExportProps) {
           ctx.arc(center, center, clampedRadius, startAngle, endAngle)
         }
       } else if (borderCapStyle === "square") {
-        const size = exportSize - borderWidth - borderOffset * 2
-        const x = borderWidth / 2 + borderOffset
-        const y = borderWidth / 2 + borderOffset
+        const size = exportSize - scaledBorderWidth - scaledBorderOffset * 2
+        const x = scaledBorderWidth / 2 + scaledBorderOffset
+        const y = scaledBorderWidth / 2 + scaledBorderOffset
         
         if (isFullBorder) {
           ctx.rect(x, y, size, size)
@@ -480,10 +488,10 @@ export function useImageExport(props: UseImageExportProps) {
         }
       } else if (borderCapStyle === "beveled") {
         // For beveled borders, use the same positioning as BorderSVG component
-        const size = exportSize - borderWidth - borderOffset * 2
-        const x = borderWidth / 2 + borderOffset
-        const y = borderWidth / 2 + borderOffset
-        const cornerRadius = 10
+        const size = exportSize - scaledBorderWidth - scaledBorderOffset * 2
+        const x = scaledBorderWidth / 2 + scaledBorderOffset
+        const y = scaledBorderWidth / 2 + scaledBorderOffset
+        const cornerRadius = 10 * scaleFactor // Scale corner radius
         
         if (isFullBorder) {
           // Draw full rounded rectangle
@@ -625,7 +633,7 @@ export function useImageExport(props: UseImageExportProps) {
        ctx.lineCap = "butt"
        
        ctx.globalAlpha = borderOpacity
-       ctx.lineWidth = borderWidth
+       ctx.lineWidth = scaledBorderWidth // Use scaled border width
        ctx.stroke()
        ctx.globalAlpha = 1
        
@@ -655,8 +663,8 @@ if (borderMode === "static" && selectedStaticBorder) {
     // Square
     ctx.rect(0, 0, exportSize, exportSize);
   } else if (borderCapStyle === "beveled") {
-    // Beveled (same logic as before)
-    const bevel = 0.1 * exportSize;
+    // For beveled (same logic as before)
+    const bevel = 0.1 * exportSize // Scale bevel size
     ctx.moveTo(bevel, 0);
     ctx.lineTo(exportSize - bevel, 0);
     ctx.lineTo(exportSize, bevel);
@@ -739,7 +747,8 @@ if (borderMode === "static" && selectedStaticBorder) {
     startAngle,
     arcDirection,
     exportCanvasRef,
-    containerSize
+    containerSize,
+    exportMultiplier
   ])
 
   return { exportImage }

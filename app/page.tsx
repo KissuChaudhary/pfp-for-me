@@ -94,6 +94,9 @@ export default function ProfilePictureEditor() {
   const [startAngle, setStartAngle] = useState(0)
   const [arcDirection, setArcDirection] = useState<"clockwise" | "counterclockwise">("clockwise")
 
+  // Export quality state
+  const [exportMultiplier, setExportMultiplier] = useState(4) // 4x resolution by default
+
   // Refs for ImageCanvas actions
   const imageCanvasRef = useRef<ImageCanvasRef | null>(null) // Corrected to useRef
 
@@ -213,6 +216,9 @@ export default function ProfilePictureEditor() {
     setCurveRadius(25)
     setStartAngle(0)
     setArcDirection("clockwise")
+    
+    // Reset export quality
+    setExportMultiplier(4)
   }, [])
 
   // Callbacks for ActionButtons
@@ -363,6 +369,11 @@ export default function ProfilePictureEditor() {
     setArcDirection,
   }
 
+  const exportProps = {
+    exportMultiplier,
+    setExportMultiplier,
+  }
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       <Header />
@@ -412,6 +423,8 @@ export default function ProfilePictureEditor() {
                 setPosition={setPosition}
                 gridSnap={gridSnap}
                 gridSize={gridSize}
+                containerSize={384} // Explicitly set desktop container size
+                exportMultiplier={exportMultiplier}
                 {...backgroundProps}
                 {...filterProps}
                 {...borderProps}
@@ -444,6 +457,7 @@ export default function ProfilePictureEditor() {
             borderProps={borderProps}
             pixArtProps={pixArtProps}
             textProps={textProps}
+            exportProps={exportProps}
           />
         </div>
       </div>
@@ -491,6 +505,7 @@ export default function ProfilePictureEditor() {
               gridSnap={gridSnap}
               gridSize={gridSize}
               containerSize={mobileContainerSize} // Pass mobile container size
+              exportMultiplier={exportMultiplier}
               {...backgroundProps}
               {...filterProps}
               {...borderProps}
@@ -524,6 +539,7 @@ export default function ProfilePictureEditor() {
             borderProps={borderProps}
             pixArtProps={pixArtProps}
             textProps={textProps}
+            exportProps={exportProps}
           />
         </div>
       </div>
