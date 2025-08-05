@@ -30,7 +30,7 @@ export default function PixArtPanel({
   return (
     <div className="p-3 space-y-3">
       {/* Pix Art Section */}
-      <div className="p-3 rounded-lg border-2 border-gray-200">
+     
         <div>
           <h3 className="font-bold text-sm mb-1">Pix Art Effects</h3>
           <p className="text-gray-600 text-xs mb-2">Add pixel art effects to your profile picture.</p>
@@ -98,7 +98,7 @@ export default function PixArtPanel({
             <p className="text-gray-600 text-xs">Increase the size to create more space in the center, revealing more of your uploaded image.</p>
           </div>
         </div>
-      </div>
+
     </div>
   )
 } 

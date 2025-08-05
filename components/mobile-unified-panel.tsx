@@ -1,13 +1,12 @@
 "use client"
 
-import { Move, Crop, Settings, Square, Palette, History, Type, Sparkles } from "lucide-react"
+import { Move, Crop, Settings, Square, Palette, History, Sparkles } from "lucide-react"
 import FiltersPanel from "./panels/filters-panel"
 import BackgroundPanel from "./panels/background-panel"
 import BorderPanel from "./panels/border-panel"
 import PixArtPanel from "./panels/pix-art-panel"
 import StylesPanel from "./panels/styles-panel"
 import PositionPanel from "./panels/position-panel"
-import TextPanel from "./panels/text-panel"
 
 interface MobileUnifiedPanelProps {
   activePanel: string | null
@@ -28,7 +27,6 @@ const tools = [
   { id: "pix-art", icon: Sparkles, label: "Pix Art" },
   { id: "styles", icon: Palette, label: "Styles" },
   { id: "history", icon: History, label: "History" },
-  { id: "text", icon: Type, label: "Text" },
 ]
 
 export default function MobileUnifiedPanel({
@@ -39,7 +37,7 @@ export default function MobileUnifiedPanel({
   filterProps,
   borderProps,
   pixArtProps,
-  textProps,
+ 
 }: MobileUnifiedPanelProps) {
   return (
     <div className="h-full border-2 border-black rounded-t-xl shadow-[0_-2px_0_rgba(0,0,0,1)] bg-white flex flex-col px-2">
@@ -54,7 +52,7 @@ export default function MobileUnifiedPanel({
                 activePanel === tool.id ? "bg-blue-500 text-white" : "bg-white hover:bg-gray-50"
               }`}
             >
-              <tool.icon className="w-3 h-3" />
+              <tool.icon className="w-4 h-4" />
             </button>
           ))}
         </div>
@@ -74,7 +72,6 @@ export default function MobileUnifiedPanel({
             <p className="text-gray-600 text-xs">Undo and redo changes.</p>
           </div>
         )}
-        {activePanel === "text" && <TextPanel {...textProps} />}
       </div>
     </div>
   )

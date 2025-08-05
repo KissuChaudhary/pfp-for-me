@@ -17,21 +17,21 @@ export default function ActionButtons({ onUploadClick, onResetClick, onExportCli
           className="w-8 h-8 rounded-full border border-black bg-white hover:bg-gray-50 flex items-center justify-center transition-colors dark-shadow"
           aria-label="Upload new image"
         >
-          <Plus className="w-3 h-3" />
+          <Plus className="w-4 h-4" />
         </button>
         <button
           onClick={onResetClick}
           className="w-8 h-8 rounded-full border dark-shadow border-black bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
           aria-label="Reset all settings"
         >
-          <RotateCcw className="w-3 h-3" />
+          <RotateCcw className="w-4 h-4" />
         </button>
         <button
           onClick={onExportClick}
           className="w-8 h-8 rounded-full border dark-shadow border-black bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
           aria-label="Export image"
         >
-          <Download className="w-3 h-3" />
+          <Download className="w-4 h-4" />
         </button>
       </div>
     </div>
